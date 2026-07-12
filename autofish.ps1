@@ -71,7 +71,7 @@ function Get-ScreenText($x, $y, $w, $h) {
     $g = [System.Drawing.Graphics]::FromImage($bmp)
     $g.CopyFromScreen($x, $y, 0, 0, [System.Drawing.Size]::new($w, $h))
     $g.Dispose()
-    $path = "$env:TEMP\autofish_ocr.png"
+    $path = "E:\Project\autofish spin\autofish_ocr.png"
     $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
     $bmp.Dispose()
     $script:p = $path; $script:e = $ocrEngine; $script:ocrResult = ""
@@ -207,7 +207,7 @@ $btnTest.Add_Click({
             $g = [System.Drawing.Graphics]::FromImage($bmp)
             $g.CopyFromScreen($dx, $dy, 0, 0, [System.Drawing.Size]::new($dw, $dh))
             $g.Dispose()
-            $path = "$env:USERPROFILE\Desktop\autofish_scan.png"
+            $path = "E:\Project\autofish spin\autofish_scan.png"
             $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
             $bmp.Dispose()
             $txtStatus.Text = "OCR: [$text]`r`nСкрин: $path"
@@ -219,7 +219,7 @@ $btnTest.Add_Click({
             $g = [System.Drawing.Graphics]::FromImage($bmp)
             $g.CopyFromScreen($dx, $dy, 0, 0, [System.Drawing.Size]::new($dw, $dh))
             $g.Dispose()
-            $path = "$env:USERPROFILE\Desktop\autofish_scan.png"
+            $path = "E:\Project\autofish spin\autofish_scan.png"
             $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
             $bmp.Dispose()
             $txtStatus.Text = "Ярких $bright/$total ($pct%). Скрин: $path"

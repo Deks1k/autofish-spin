@@ -146,7 +146,7 @@ function StopFish {
 }
 
 $btnTest = New-Object System.Windows.Forms.Button
-$btnTest.Text = "Тест(скан)"; $btnTest.Location = [System.Drawing.Point]::new(270, 145); $btnTest.Size = [System.Drawing.Size]::new(100, 25)
+$btnTest.Text = "Скан"; $btnTest.Location = [System.Drawing.Point]::new(270, 145); $btnTest.Size = [System.Drawing.Size]::new(100, 25)
 $btnTest.Add_Click({
     $dx = [int]$numDX.Value; $dy = [int]$numDY.Value
     $dw = [int]$numDW.Value; $dh = [int]$numDH.Value
@@ -154,7 +154,14 @@ $btnTest.Add_Click({
     try {
         $bright = [ScreenCapture]::CountBrightPixels($dx, $dy, $dw, $dh, $thresh)
         $total = $dw * $dh; $pct = [Math]::Round($bright / $total * 100, 1)
-        $lblStatus.Text = "Область: ярких $bright из $total пикселей ($pct%)"
+        $bmp = New-Object System.Drawing.Bitmap($dw, $dh)
+        $g = [System.Drawing.Graphics]::FromImage($bmp)
+        $g.CopyFromScreen($dx, $dy, 0, 0, [System.Drawing.Size]::new($dw, $dh))
+        $g.Dispose()
+        $path = "$env:USERPROFILE\Desktop\autofish_scan.png"
+        $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
+        $bmp.Dispose()
+        $lblStatus.Text = "Ярких $bright/$total ($pct%). Скрин: $path"
     } catch {
         $lblStatus.Text = "Ошибка захвата"
     }

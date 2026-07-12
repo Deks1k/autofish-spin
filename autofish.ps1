@@ -107,12 +107,12 @@ $form.Controls.Add($lblDetect)
 
 $numDX = New-Object System.Windows.Forms.NumericUpDown
 $numDX.Location = [System.Drawing.Point]::new(15, 145); $numDX.Size = [System.Drawing.Size]::new(60, 25)
-$numDX.Minimum = 0; $numDX.Maximum = 3840; $numDX.Value = 800
+$numDX.Minimum = 0; $numDX.Maximum = 3840; $numDX.Value = 850
 $form.Controls.Add($numDX)
 
 $numDY = New-Object System.Windows.Forms.NumericUpDown
 $numDY.Location = [System.Drawing.Point]::new(85, 145); $numDY.Size = [System.Drawing.Size]::new(60, 25)
-$numDY.Minimum = 0; $numDY.Maximum = 2160; $numDY.Value = 900
+$numDY.Minimum = 0; $numDY.Maximum = 2160; $numDY.Value = 1380
 $form.Controls.Add($numDY)
 
 $numDW = New-Object System.Windows.Forms.NumericUpDown
@@ -122,7 +122,7 @@ $form.Controls.Add($numDW)
 
 $numDH = New-Object System.Windows.Forms.NumericUpDown
 $numDH.Location = [System.Drawing.Point]::new(225, 145); $numDH.Size = [System.Drawing.Size]::new(60, 25)
-$numDH.Minimum = 1; $numDH.Maximum = 100; $numDH.Value = 4
+$numDH.Minimum = 1; $numDH.Maximum = 100; $numDH.Value = 18
 $form.Controls.Add($numDH)
 
 $lblThresh = New-Object System.Windows.Forms.Label

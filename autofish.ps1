@@ -145,6 +145,22 @@ function StopFish {
     $btnStart.Text = "Старт"; $lblStatus.Text = "Остановлен"; $lblStatus.ForeColor = "Red"
 }
 
+$btnTest = New-Object System.Windows.Forms.Button
+$btnTest.Text = "Тест(скан)"; $btnTest.Location = [System.Drawing.Point]::new(270, 145); $btnTest.Size = [System.Drawing.Size]::new(100, 25)
+$btnTest.Add_Click({
+    $dx = [int]$numDX.Value; $dy = [int]$numDY.Value
+    $dw = [int]$numDW.Value; $dh = [int]$numDH.Value
+    $thresh = [int]$numThresh.Value
+    try {
+        $bright = [ScreenCapture]::CountBrightPixels($dx, $dy, $dw, $dh, $thresh)
+        $total = $dw * $dh; $pct = [Math]::Round($bright / $total * 100, 1)
+        $lblStatus.Text = "Область: ярких $bright из $total пикселей ($pct%)"
+    } catch {
+        $lblStatus.Text = "Ошибка захвата"
+    }
+})
+$form.Controls.Add($btnTest)
+
 $btnStart = New-Object System.Windows.Forms.Button
 $btnStart.Text = "Старт"; $btnStart.Location = [System.Drawing.Point]::new(60, 215); $btnStart.Size = [System.Drawing.Size]::new(80, 30)
 $btnStart.Add_Click({

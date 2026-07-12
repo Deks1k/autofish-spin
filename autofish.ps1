@@ -7,8 +7,6 @@ if ([Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') {
 Add-Type -TypeDefinition @"
 using System;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
-using System.Drawing;
 
 [StructLayout(LayoutKind.Sequential)]
 public struct MOUSEINPUT { public int dx, dy; public uint mouseData, dwFlags, time; public IntPtr dwExtraInfo; }
@@ -76,17 +74,7 @@ $form.Controls.Add($lblStatus)
 $btnStart = New-Object System.Windows.Forms.Button
 $btnStart.Text = "Старт"; $btnStart.Location = [System.Drawing.Point]::new(60, 125); $btnStart.Size = [System.Drawing.Size]::new(80, 30)
 $btnStart.Add_Click({
-    if ($script:f) {
-        $script:f = $false; $script:st = 0; $script:tk = 0
-        [WinAPI]::Rel()
-        $btnStart.Text = "Старт"; $lblStatus.Text = "Остановлен"; $lblStatus.ForeColor = "Red"
-    } else {
-        $script:wait = [int]$numWait.Value
-        $script:reel = [int]$numReel.Value
-        $script:f = $true; $script:st = 1; $script:tk = 0
-        $btnStart.Text = "Стоп"
-        $lblStatus.Text = "Заброс..."; $lblStatus.ForeColor = "Green"
-    }
+    if ($script:f) { Stop } else { Start }
 })
 $form.Controls.Add($btnStart)
 
@@ -95,13 +83,30 @@ $btnExit.Text = "Выход"; $btnExit.Location = [System.Drawing.Point]::new(17
 $btnExit.Add_Click({ $form.Close() })
 $form.Controls.Add($btnExit)
 
+function Start {
+    $script:wait = [int]$numWait.Value
+    $script:reel = [int]$numReel.Value
+    $script:f = $true; $script:st = 1; $script:tk = 0
+    $btnStart.Text = "Стоп"
+    $lblStatus.Text = "Заброс..."; $lblStatus.ForeColor = "Green"
+}
+
+function Stop {
+    $script:f = $false; $script:st = 0; $script:tk = 0
+    [WinAPI]::Rel()
+    $btnStart.Text = "Старт"; $lblStatus.Text = "Остановлен"; $lblStatus.ForeColor = "Red"
+}
+
 $tm = New-Object System.Windows.Forms.Timer
 $tm.Interval = 100
 $tm.Add_Tick({
     $f3 = [WinAPI]::KeyDown(0x72); $f4 = [WinAPI]::KeyDown(0x73)
-    if ($f3 -and -not $script:prevF3) { $btnStart.PerformClick() }
-    if ($f4 -and -not $script:prevF4 -and $script:f) { $btnStart.PerformClick() }
+
+    if ($f3 -and -not $script:prevF3 -and -not $script:f) { Start }
+    if ($f4 -and -not $script:prevF4 -and $script:f) { Stop }
+
     $script:prevF3 = $f3; $script:prevF4 = $f4
+
     if (-not $script:f) { return }
 
     if ($script:st -eq 1) {

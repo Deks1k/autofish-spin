@@ -158,7 +158,7 @@ $form.Controls.Add($lblMode)
 $cmbMode = New-Object System.Windows.Forms.ComboBox
 $cmbMode.Location = [System.Drawing.Point]::new(65, 193); $cmbMode.Size = [System.Drawing.Size]::new(100, 25)
 $cmbMode.DropDownStyle = "DropDownList"
-$cmbMode.Items.Add("Яркость"); $cmbMode.Items.Add("Эталон")
+$cmbMode.Items.Add("Яркость"); $cmbMode.Items.Add("Эталон"); $cmbMode.Items.Add("Ручной")
 $cmbMode.SelectedIndex = 0
 
 $lblThresh = New-Object System.Windows.Forms.Label
@@ -237,8 +237,10 @@ function Scan {
             $path = "E:\Project\autofish spin\autofish_scan.png"
             $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
             $txtStatus.Text = "Ярких $bright/$total ($pct%). Скрин: $path"
+        } elseif ($mode -eq "Ручной") {
+            $txtStatus.Text = "Ручной режим — скан не используется"
         }
-    } catch { $txtStatus.Text = "Ошибка: $_" }
+    } catch { $txtStatus.Text = "Oшибка: $_" }
     finally { $script:scanning = $false }
 }
 
@@ -299,45 +301,55 @@ $tm.Add_Tick({
             $txtStatus.Text = "Мотка..."
         }
     } elseif ($script:st -eq 3) {
-        $script:tk++; $script:detectTick++
+        $script:tk++
         $mode = $cmbMode.SelectedItem
-        if ($mode -eq "Эталон" -and $script:hasRef) {
-            if ($script:detectTick -ge 5) {
-                $script:detectTick = 0
-                try {
-                    $match = [ScreenCapture]::MatchLuma($script:refPixels, [int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, 30)
-                    if ($match -gt 0.85) {
-                        $script:detectHit++; if ($script:detectHit -ge 3) {
-                            [WinAPI]::SM([WinAPI]::LMU)
-                            $script:st = 1; $script:tk = 0
-                            [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
-                            $txtStatus.Text = "Заброс..."
-                        }
-                    } else { $script:detectHit = 0 }
-                } catch { }
+        if ($mode -eq "Ручной") {
+            if ($script:tk -ge ($script:reel * 10)) {
+                [WinAPI]::SM([WinAPI]::LMU)
+                $script:st = 1; $script:tk = 0
+                [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
+                $txtStatus.Text = "Заброс..."
             }
         } else {
-            if ($script:detectTick -ge 5) {
-                $script:detectTick = 0
-                try {
-                    $bright = [ScreenCapture]::CountBrightPixels([int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, [int]$numThresh.Value)
-                    $total = [int]$numDW.Value * [int]$numDH.Value; $pct = $bright / $total
-                    if ($pct -gt 0.05) {
-                        $script:detectHit++; if ($script:detectHit -ge 3) {
-                            [WinAPI]::SM([WinAPI]::LMU)
-                            $script:st = 1; $script:tk = 0
-                            [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
-                            $txtStatus.Text = "Заброс..."
-                        }
-                    } else { $script:detectHit = 0 }
-                } catch {}
+            $script:detectTick++
+            if ($mode -eq "Эталон" -and $script:hasRef) {
+                if ($script:detectTick -ge 5) {
+                    $script:detectTick = 0
+                    try {
+                        $match = [ScreenCapture]::MatchLuma($script:refPixels, [int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, 30)
+                        if ($match -gt 0.85) {
+                            $script:detectHit++; if ($script:detectHit -ge 3) {
+                                [WinAPI]::SM([WinAPI]::LMU)
+                                $script:st = 1; $script:tk = 0
+                                [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
+                                $txtStatus.Text = "Заброс..."
+                            }
+                        } else { $script:detectHit = 0 }
+                    } catch { }
+                }
+            } else {
+                if ($script:detectTick -ge 5) {
+                    $script:detectTick = 0
+                    try {
+                        $bright = [ScreenCapture]::CountBrightPixels([int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, [int]$numThresh.Value)
+                        $total = [int]$numDW.Value * [int]$numDH.Value; $pct = $bright / $total
+                        if ($pct -gt 0.05) {
+                            $script:detectHit++; if ($script:detectHit -ge 3) {
+                                [WinAPI]::SM([WinAPI]::LMU)
+                                $script:st = 1; $script:tk = 0
+                                [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
+                                $txtStatus.Text = "Заброс..."
+                            }
+                        } else { $script:detectHit = 0 }
+                    } catch {}
+                }
             }
-        }
-        if ($script:tk -ge 600) {
-            [WinAPI]::SM([WinAPI]::LMU)
-            $script:st = 1; $script:tk = 0
-            [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
-            $txtStatus.Text = "Заброс..."
+            if ($script:tk -ge 600) {
+                [WinAPI]::SM([WinAPI]::LMU)
+                $script:st = 1; $script:tk = 0
+                [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
+                $txtStatus.Text = "Заброс..."
+            }
         }
     }
 })

@@ -37,16 +37,8 @@ public class WinAPI {
 }
 "@ -ReferencedAssemblies "System.Windows.Forms","System.Drawing"
 
-$script:f = $false
-$script:st = 0
-$script:tk = 0
-$script:tm = $null
-
-function StopFish {
-    $script:f = $false; $script:st = 0; $script:tk = 0
-    if ($script:tm) { $script:tm.Stop() }
-    [WinAPI]::Rel()
-}
+$script:f = $false; $script:st = 0; $script:tk = 0; $script:wait = 3; $script:reel = 15
+$script:prevF3 = $false; $script:prevF4 = $false
 
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "AutoFish Spin"
@@ -56,8 +48,7 @@ $form.FormBorderStyle = "FixedSingle"
 $form.MaximizeBox = $false
 
 $lbl1 = New-Object System.Windows.Forms.Label
-$lbl1.Text = "Ожидание (с):"
-$lbl1.Location = [System.Drawing.Point]::new(15, 15); $lbl1.Size = [System.Drawing.Size]::new(120, 25)
+$lbl1.Text = "Ожидание (с):"; $lbl1.Location = [System.Drawing.Point]::new(15, 15); $lbl1.Size = [System.Drawing.Size]::new(120, 25)
 $form.Controls.Add($lbl1)
 
 $numWait = New-Object System.Windows.Forms.NumericUpDown
@@ -66,8 +57,7 @@ $numWait.Minimum = 1; $numWait.Maximum = 30; $numWait.Value = 3
 $form.Controls.Add($numWait)
 
 $lbl2 = New-Object System.Windows.Forms.Label
-$lbl2.Text = "Мотка (с):"
-$lbl2.Location = [System.Drawing.Point]::new(15, 50); $lbl2.Size = [System.Drawing.Size]::new(120, 25)
+$lbl2.Text = "Мотка (с):"; $lbl2.Location = [System.Drawing.Point]::new(15, 50); $lbl2.Size = [System.Drawing.Size]::new(120, 25)
 $form.Controls.Add($lbl2)
 
 $numReel = New-Object System.Windows.Forms.NumericUpDown
@@ -78,76 +68,67 @@ $form.Controls.Add($numReel)
 $lblStatus = New-Object System.Windows.Forms.Label
 $lblStatus.Name = "lblStatus"
 $lblStatus.Text = "Остановлен"
-$lblStatus.Location = [System.Drawing.Point]::new(15, 85)
-$lblStatus.Size = [System.Drawing.Size]::new(280, 25)
+$lblStatus.Location = [System.Drawing.Point]::new(15, 85); $lblStatus.Size = [System.Drawing.Size]::new(280, 25)
 $lblStatus.ForeColor = [System.Drawing.Color]::Red
 $lblStatus.Font = [System.Drawing.Font]::new("Arial", 10, [System.Drawing.FontStyle]::Bold)
 $form.Controls.Add($lblStatus)
 
 $btnStart = New-Object System.Windows.Forms.Button
-$btnStart.Text = "Старт"
-$btnStart.Location = [System.Drawing.Point]::new(60, 125); $btnStart.Size = [System.Drawing.Size]::new(80, 30)
+$btnStart.Text = "Старт"; $btnStart.Location = [System.Drawing.Point]::new(60, 125); $btnStart.Size = [System.Drawing.Size]::new(80, 30)
 $btnStart.Add_Click({
-    if ($script:f) { StopFish; $btnStart.Text = "Старт"; $lblStatus.Text = "Остановлен"; $lblStatus.ForeColor = "Red"; return }
-    $wait = [int]$numWait.Value
-    $reel = [int]$numReel.Value
-    $script:f = $true; $script:st = 1; $script:tk = 0
-    $btnStart.Text = "Стоп"
-    $lblStatus.Text = "Заброс..."; $lblStatus.ForeColor = "Green"
-
-    $script:tm = New-Object System.Windows.Forms.Timer
-    $script:tm.Interval = 100
-    $script:tm.Add_Tick({
-        if (-not $script:f) { $script:tm.Stop(); return }
-        if ($script:st -eq 1) {
-            if ($script:tk -eq 0) { [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD) }
-            $script:tk++
-            if ($script:tk -ge 10) {
-                [WinAPI]::SK(0x10, 2); [WinAPI]::SM([WinAPI]::LMU)
-                $script:st = 2; $script:tk = 0
-                $lblStatus.Text = "Ожидание ${wait}с..."
-            }
-        }
-        elseif ($script:st -eq 2) {
-            $script:tk++
-            if ($script:tk -ge ($wait * 10)) {
-                $script:st = 3; $script:tk = 0
-                [WinAPI]::SM([WinAPI]::LMD)
-                $lblStatus.Text = "Мотка ${reel}с..."
-            }
-        }
-        elseif ($script:st -eq 3) {
-            $script:tk++
-            if ($script:tk -ge ($reel * 10)) {
-                [WinAPI]::SM([WinAPI]::LMU)
-                $script:st = 1; $script:tk = 0
-                [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
-                $lblStatus.Text = "Заброс..."; $lblStatus.Refresh()
-            }
-        }
-    })
-    $script:tm.Start()
+    if ($script:f) {
+        $script:f = $false; $script:st = 0; $script:tk = 0
+        [WinAPI]::Rel()
+        $btnStart.Text = "Старт"; $lblStatus.Text = "Остановлен"; $lblStatus.ForeColor = "Red"
+    } else {
+        $script:wait = [int]$numWait.Value
+        $script:reel = [int]$numReel.Value
+        $script:f = $true; $script:st = 1; $script:tk = 0
+        $btnStart.Text = "Стоп"
+        $lblStatus.Text = "Заброс..."; $lblStatus.ForeColor = "Green"
+    }
 })
 $form.Controls.Add($btnStart)
 
-$script:prevF3 = $false
-$script:prevF4 = $false
-$hkTimer = New-Object System.Windows.Forms.Timer
-$hkTimer.Interval = 100
-$hkTimer.Add_Tick({
-    $f3 = [WinAPI]::KeyDown(0x72)
-    $f4 = [WinAPI]::KeyDown(0x73)
-    if ($f3 -and -not $script:prevF3) { $btnStart.PerformClick() }
-    if ($f4 -and -not $script:prevF4 -and $script:f) { $btnStart.PerformClick() }
-    $script:prevF3 = $f3
-    $script:prevF4 = $f4
-})
-$hkTimer.Start()
-
 $btnExit = New-Object System.Windows.Forms.Button
-$btnExit.Text = "Выход"
-$btnExit.Location = [System.Drawing.Point]::new(170, 125); $btnExit.Size = [System.Drawing.Size]::new(80, 30)
+$btnExit.Text = "Выход"; $btnExit.Location = [System.Drawing.Point]::new(170, 125); $btnExit.Size = [System.Drawing.Size]::new(80, 30)
 $btnExit.Add_Click({ $form.Close() })
 $form.Controls.Add($btnExit)
+
+$tm = New-Object System.Windows.Forms.Timer
+$tm.Interval = 100
+$tm.Add_Tick({
+    $f3 = [WinAPI]::KeyDown(0x72); $f4 = [WinAPI]::KeyDown(0x73)
+    if ($f3 -and -not $script:prevF3) { $btnStart.PerformClick() }
+    if ($f4 -and -not $script:prevF4 -and $script:f) { $btnStart.PerformClick() }
+    $script:prevF3 = $f3; $script:prevF4 = $f4
+    if (-not $script:f) { return }
+
+    if ($script:st -eq 1) {
+        if ($script:tk -eq 0) { [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD) }
+        $script:tk++
+        if ($script:tk -ge 10) {
+            [WinAPI]::SK(0x10, 2); [WinAPI]::SM([WinAPI]::LMU)
+            $script:st = 2; $script:tk = 0
+            $lblStatus.Text = "Ожидание $($script:wait)с..."
+        }
+    } elseif ($script:st -eq 2) {
+        $script:tk++
+        if ($script:tk -ge ($script:wait * 10)) {
+            $script:st = 3; $script:tk = 0
+            [WinAPI]::SM([WinAPI]::LMD)
+            $lblStatus.Text = "Мотка $($script:reel)с..."
+        }
+    } elseif ($script:st -eq 3) {
+        $script:tk++
+        if ($script:tk -ge ($script:reel * 10)) {
+            [WinAPI]::SM([WinAPI]::LMU)
+            $script:st = 1; $script:tk = 0
+            [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
+            $lblStatus.Text = "Заброс..."
+        }
+    }
+})
+$tm.Start()
 
 [System.Windows.Forms.Application]::Run($form)

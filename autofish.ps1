@@ -93,7 +93,7 @@ $script:rx = 853; $script:ry = 1382; $script:rw = 155; $script:rh = 18
 
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "AutoFish Spin"
-$form.Size = [System.Drawing.Size]::new(400, 370)
+$form.Size = [System.Drawing.Size]::new(400, 335)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedSingle"
 $form.MaximizeBox = $false
@@ -252,24 +252,23 @@ function Memorize {
     } catch { $txtStatus.Text = "Ошибка: $_" }
 }
 
-$btnScan = New-Object System.Windows.Forms.Button
-$btnScan.Text = "Скан(F6)"; $btnScan.Location = [System.Drawing.Point]::new(270, 160); $btnScan.Size = [System.Drawing.Size]::new(100, 25)
-$btnScan.Add_Click({ Scan })
-$form.Controls.Add($btnScan)
-
 $btnRef = New-Object System.Windows.Forms.Button
-$btnRef.Text = "Запомнить(F5)"
-$btnRef.Location = [System.Drawing.Point]::new(270, 193); $btnRef.Size = [System.Drawing.Size]::new(100, 25)
+$btnRef.Text = "Запомнить(F5)"; $btnRef.Location = [System.Drawing.Point]::new(15, 225); $btnRef.Size = [System.Drawing.Size]::new(120, 25)
 $btnRef.Add_Click({ Memorize })
 $form.Controls.Add($btnRef)
 
+$btnScan = New-Object System.Windows.Forms.Button
+$btnScan.Text = "Скан(F6)"; $btnScan.Location = [System.Drawing.Point]::new(145, 225); $btnScan.Size = [System.Drawing.Size]::new(120, 25)
+$btnScan.Add_Click({ Scan })
+$form.Controls.Add($btnScan)
+
 $btnStart = New-Object System.Windows.Forms.Button
-$btnStart.Text = "Старт"; $btnStart.Location = [System.Drawing.Point]::new(60, 240); $btnStart.Size = [System.Drawing.Size]::new(80, 30)
+$btnStart.Text = "Старт"; $btnStart.Location = [System.Drawing.Point]::new(60, 265); $btnStart.Size = [System.Drawing.Size]::new(80, 30)
 $btnStart.Add_Click({ if ($script:f) { StopFish } else { StartFish } })
 $form.Controls.Add($btnStart)
 
 $btnExit = New-Object System.Windows.Forms.Button
-$btnExit.Text = "Выход"; $btnExit.Location = [System.Drawing.Point]::new(170, 240); $btnExit.Size = [System.Drawing.Size]::new(80, 30)
+$btnExit.Text = "Выход"; $btnExit.Location = [System.Drawing.Point]::new(170, 265); $btnExit.Size = [System.Drawing.Size]::new(80, 30)
 $btnExit.Add_Click({ $form.Close() })
 $form.Controls.Add($btnExit)
 

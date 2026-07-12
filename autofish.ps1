@@ -66,6 +66,7 @@ $null = [Windows.Media.Ocr.OcrEngine, Windows.Foundation, ContentType = WindowsR
 $null = [Windows.Graphics.Imaging.BitmapDecoder, Windows.Foundation, ContentType = WindowsRuntime]
 $null = [Windows.Storage.Streams.InMemoryRandomAccessStream, Windows.Foundation, ContentType = WindowsRuntime]
 $null = [Windows.Globalization.Language, Windows.Foundation, ContentType = WindowsRuntime]
+$null = [Windows.Security.Cryptography.CryptographicBuffer, Windows.Security.Cryptography, ContentType = WindowsRuntime]
 
 $ocrEngine = $null
 try {
@@ -80,12 +81,12 @@ function Get-ScreenText($x, $y, $w, $h) {
     $g.Dispose()
     $ms = New-Object System.IO.MemoryStream
     $bmp.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png)
-    $ms.Position = 0
     $bmp.Dispose()
+    $bytes = $ms.ToArray(); $ms.Dispose()
     $ras = [Windows.Storage.Streams.InMemoryRandomAccessStream]::new()
-    $out = $ras.AsStreamForWrite()
-    $ms.CopyTo($out); $out.Flush()
-    $ms.Dispose(); $ras.Seek(0)
+    $buffer = [Windows.Security.Cryptography.CryptographicBuffer]::CreateFromByteArray($bytes)
+    $ras.WriteAsync($buffer).GetAwaiter().GetResult()
+    $ras.Seek(0)
     $decoderOp = [Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($ras)
     while (-not $decoderOp.IsCompleted) { Start-Sleep -Milliseconds 10 }
     $decoder = $decoderOp.GetResults()

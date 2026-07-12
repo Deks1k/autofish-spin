@@ -79,15 +79,16 @@ function Get-ScreenText($x, $y, $w, $h) {
     $g = [System.Drawing.Graphics]::FromImage($bmp)
     $g.CopyFromScreen($x, $y, 0, 0, [System.Drawing.Size]::new($w, $h))
     $g.Dispose()
-    $ms = New-Object System.IO.MemoryStream
-    $bmp.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png)
+    $path = "$env:TEMP\autofish_ocr.png"
+    $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
     $bmp.Dispose()
-    $bytes = $ms.ToArray(); $ms.Dispose()
-    $ras = [Windows.Storage.Streams.InMemoryRandomAccessStream]::new()
-    $buffer = [Windows.Security.Cryptography.CryptographicBuffer]::CreateFromByteArray($bytes)
-    $ras.WriteAsync($buffer).GetAwaiter().GetResult()
-    $ras.Seek(0)
-    $decoderOp = [Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($ras)
+    $fileOp = [Windows.Storage.StorageFile]::GetFileFromPathAsync($path)
+    while (-not $fileOp.IsCompleted) { Start-Sleep -Milliseconds 10 }
+    $file = $fileOp.GetResults()
+    $streamOp = $file.OpenReadAsync()
+    while (-not $streamOp.IsCompleted) { Start-Sleep -Milliseconds 10 }
+    $stream = $streamOp.GetResults()
+    $decoderOp = [Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($stream)
     while (-not $decoderOp.IsCompleted) { Start-Sleep -Milliseconds 10 }
     $decoder = $decoderOp.GetResults()
     $sbOp = $decoder.GetSoftwareBitmapAsync()

@@ -99,12 +99,6 @@ $btnStart.Add_Click({
     $script:tm.Interval = 100
     $script:tm.Add_Tick({
         if (-not $script:f) { $script:tm.Stop(); return }
-
-        if ([WinAPI]::KeyDown(0x72) -and -not $script:prevF3) { $btnStart.PerformClick() }
-        if ([WinAPI]::KeyDown(0x73) -and -not $script:prevF4) { if ($script:f) { $btnStart.PerformClick() } }
-        $script:prevF3 = [WinAPI]::KeyDown(0x72)
-        $script:prevF4 = [WinAPI]::KeyDown(0x73)
-
         if ($script:st -eq 1) {
             if ($script:tk -eq 0) { [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD) }
             $script:tk++
@@ -135,6 +129,20 @@ $btnStart.Add_Click({
     $script:tm.Start()
 })
 $form.Controls.Add($btnStart)
+
+$script:prevF3 = $false
+$script:prevF4 = $false
+$hkTimer = New-Object System.Windows.Forms.Timer
+$hkTimer.Interval = 100
+$hkTimer.Add_Tick({
+    $f3 = [WinAPI]::KeyDown(0x72)
+    $f4 = [WinAPI]::KeyDown(0x73)
+    if ($f3 -and -not $script:prevF3) { $btnStart.PerformClick() }
+    if ($f4 -and -not $script:prevF4 -and $script:f) { $btnStart.PerformClick() }
+    $script:prevF3 = $f3
+    $script:prevF4 = $f4
+})
+$hkTimer.Start()
 
 $btnExit = New-Object System.Windows.Forms.Button
 $btnExit.Text = "Выход"

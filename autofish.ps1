@@ -89,7 +89,7 @@ $script:refPixels = $null; $script:hasRef = $false
 
 # Mode-specific settings
 $script:bx = 900; $script:by = 1380; $script:bw = 110; $script:bh = 18; $script:bt = 120
-$script:rx = 900; $script:ry = 1380; $script:rw = 110; $script:rh = 18
+$script:rx = 1000; $script:ry = 1380; $script:rw = 110; $script:rh = 18
 
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "AutoFish Spin"

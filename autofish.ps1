@@ -87,13 +87,16 @@ $numReel.Location = [System.Drawing.Point]::new(140, 48); $numReel.Size = [Syste
 $numReel.Minimum = 1; $numReel.Maximum = 60; $numReel.Value = 15
 $form.Controls.Add($numReel)
 
-$lblStatus = New-Object System.Windows.Forms.Label
-$lblStatus.Name = "lblStatus"
-$lblStatus.Text = "Остановлен"
-$lblStatus.Location = [System.Drawing.Point]::new(15, 85); $lblStatus.Size = [System.Drawing.Size]::new(360, 25)
-$lblStatus.ForeColor = [System.Drawing.Color]::Red
-$lblStatus.Font = [System.Drawing.Font]::new("Arial", 10, [System.Drawing.FontStyle]::Bold)
-$form.Controls.Add($lblStatus)
+$txtStatus = New-Object System.Windows.Forms.TextBox
+$txtStatus.Name = "txtStatus"
+$txtStatus.Text = "Остановлен"
+$txtStatus.Location = [System.Drawing.Point]::new(15, 85); $txtStatus.Size = [System.Drawing.Size]::new(360, 25)
+$txtStatus.ForeColor = [System.Drawing.Color]::Red
+$txtStatus.Font = [System.Drawing.Font]::new("Arial", 10, [System.Drawing.FontStyle]::Bold)
+$txtStatus.ReadOnly = $true
+$txtStatus.BackColor = [System.Drawing.Color]::White
+$txtStatus.BorderStyle = "FixedSingle"
+$form.Controls.Add($txtStatus)
 
 # Detection region settings
 $lblDetect = New-Object System.Windows.Forms.Label
@@ -136,13 +139,13 @@ function StartFish {
     $script:reel = [int]$numReel.Value
     $script:f = $true; $script:st = 1; $script:tk = 0; $script:detectTick = 0
     $btnStart.Text = "Стоп"
-    $lblStatus.Text = "Заброс..."; $lblStatus.ForeColor = "Green"
+    $txtStatus.Text = "Заброс..."; $txtStatus.ForeColor = "Green"
 }
 
 function StopFish {
     $script:f = $false; $script:st = 0; $script:tk = 0
     [WinAPI]::Rel()
-    $btnStart.Text = "Старт"; $lblStatus.Text = "Остановлен"; $lblStatus.ForeColor = "Red"
+    $btnStart.Text = "Старт"; $txtStatus.Text = "Остановлен"; $txtStatus.ForeColor = "Red"
 }
 
 $btnTest = New-Object System.Windows.Forms.Button
@@ -161,9 +164,9 @@ $btnTest.Add_Click({
         $path = "$env:USERPROFILE\Desktop\autofish_scan.png"
         $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
         $bmp.Dispose()
-        $lblStatus.Text = "Ярких $bright/$total ($pct%). Скрин: $path"
+        $txtStatus.Text = "Ярких $bright/$total ($pct%). Скрин: $path"
     } catch {
-        $lblStatus.Text = "Ошибка: $_"
+        $txtStatus.Text = "Ошибка: $_"
     }
 })
 $form.Controls.Add($btnTest)
@@ -198,14 +201,14 @@ $tm.Add_Tick({
         if ($script:tk -ge 10) {
             [WinAPI]::SK(0x10, 2); [WinAPI]::SM([WinAPI]::LMU)
             $script:st = 2; $script:tk = 0
-            $lblStatus.Text = "Ожидание $($script:wait)с..."
+            $txtStatus.Text = "Ожидание $($script:wait)с..."
         }
     } elseif ($script:st -eq 2) {
         $script:tk++
         if ($script:tk -ge ($script:wait * 10)) {
             $script:st = 3; $script:tk = 0; $script:detectTick = 0
             [WinAPI]::SM([WinAPI]::LMD)
-            $lblStatus.Text = "Мотка..."
+            $txtStatus.Text = "Мотка..."
         }
     } elseif ($script:st -eq 3) {
         $script:tk++; $script:detectTick++
@@ -224,7 +227,7 @@ $tm.Add_Tick({
                     [WinAPI]::SM([WinAPI]::LMU)
                     $script:st = 1; $script:tk = 0
                     [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
-                    $lblStatus.Text = "Заброс..."
+                    $txtStatus.Text = "Заброс..."
                 }
             } catch {
                 # ignore capture errors
@@ -235,7 +238,7 @@ $tm.Add_Tick({
             [WinAPI]::SM([WinAPI]::LMU)
             $script:st = 1; $script:tk = 0
             [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
-            $lblStatus.Text = "Заброс..."
+            $txtStatus.Text = "Заброс..."
         }
     }
 })

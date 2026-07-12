@@ -205,7 +205,6 @@ $btnTest.Add_Click({
     $mode = $cmbMode.SelectedItem
     try {
         if ($mode -eq "OCR") {
-            if (-not $ocrEngine) { $txtStatus.Text = "OCR недоступен"; return }
             $text = Get-ScreenText $dx $dy $dw $dh
             $bmp = New-Object System.Drawing.Bitmap($dw, $dh)
             $g = [System.Drawing.Graphics]::FromImage($bmp)
@@ -278,17 +277,15 @@ $tm.Add_Tick({
             # Every 1000ms (10 ticks) — OCR is slower
             if ($script:detectTick -ge 10) {
                 $script:detectTick = 0
-                if ($ocrEngine) {
-                    try {
-                        $text = Get-ScreenText ([int]$numDX.Value) ([int]$numDY.Value) ([int]$numDW.Value) ([int]$numDH.Value)
-                        if ($text -and ($text -match "готова" -or $text -match "заброс" -or $text -match "снасть")) {
-                            [WinAPI]::SM([WinAPI]::LMU)
-                            $script:st = 1; $script:tk = 0
-                            [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
-                            $txtStatus.Text = "Заброс..."
-                        }
-                    } catch {}
-                }
+                try {
+                    $text = Get-ScreenText ([int]$numDX.Value) ([int]$numDY.Value) ([int]$numDW.Value) ([int]$numDH.Value)
+                    if ($text -and ($text -match "готова" -or $text -match "заброс" -or $text -match "снасть")) {
+                        [WinAPI]::SM([WinAPI]::LMU)
+                        $script:st = 1; $script:tk = 0
+                        [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
+                        $txtStatus.Text = "Заброс..."
+                    }
+                } catch {}
             }
         } else {
             # Brightness mode every 500ms (5 ticks)

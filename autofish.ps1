@@ -158,7 +158,7 @@ $form.Controls.Add($lblMode)
 $cmbMode = New-Object System.Windows.Forms.ComboBox
 $cmbMode.Location = [System.Drawing.Point]::new(65, 193); $cmbMode.Size = [System.Drawing.Size]::new(100, 25)
 $cmbMode.DropDownStyle = "DropDownList"
-$cmbMode.Items.Add("Яркость"); $cmbMode.Items.Add("Эталон"); $cmbMode.Items.Add("Ручной")
+$cmbMode.Items.Add("Яркость")|Out-Null; $cmbMode.Items.Add("Эталон")|Out-Null; $cmbMode.Items.Add("Ручной")|Out-Null
 $cmbMode.SelectedIndex = 0
 
 $lblThresh = New-Object System.Windows.Forms.Label

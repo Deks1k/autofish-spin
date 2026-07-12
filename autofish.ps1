@@ -74,17 +74,21 @@ function Get-ScreenText($x, $y, $w, $h) {
     $path = "E:\Project\autofish spin\autofish_ocr.png"
     $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
     $bmp.Dispose()
-    $script:p = $path; $script:e = $ocrEngine; $script:ocrResult = ""
+    $script:ocrResult = ""
+    $script:ocrPath = $path
     $task = [System.Threading.Tasks.Task]::Run([Action]{
         function Aw { while (-not $args[0].IsCompleted) { Start-Sleep -Milliseconds 5 }; return $args[0].GetResults() }
         try {
-            $f = Aw ([Windows.Storage.StorageFile]::GetFileFromPathAsync($script:p))
+            $engLang = New-Object Windows.Globalization.Language("ru-RU")
+            $eng = [Windows.Media.Ocr.OcrEngine]::TryCreateFromLanguage($engLang)
+            if (-not $eng) { return }
+            $f = Aw ([Windows.Storage.StorageFile]::GetFileFromPathAsync($script:ocrPath))
             $s = Aw ($f.OpenReadAsync())
             $d = Aw ([Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($s))
             $sb = Aw ($d.GetSoftwareBitmapAsync())
-            $r = Aw ($script:e.RecognizeAsync($sb))
+            $r = Aw ($eng.RecognizeAsync($sb))
             $script:ocrResult = $r.Text
-        } catch { $script:ocrResult = "" }
+        } catch { }
     })
     while (-not $task.IsCompleted) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 10 }
     return $script:ocrResult

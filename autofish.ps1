@@ -1,10 +1,4 @@
-﻿#Requires -Version 5.0
-if ([Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') {
-    powershell -STA -File $MyInvocation.MyCommand.Path
-    return
-}
-
-Add-Type -TypeDefinition @"
+﻿Add-Type -TypeDefinition @"
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;

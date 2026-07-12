@@ -103,17 +103,17 @@ $form.Controls.Add($lblDetect)
 
 $numDX = New-Object System.Windows.Forms.NumericUpDown
 $numDX.Location = [System.Drawing.Point]::new(15, 145); $numDX.Size = [System.Drawing.Size]::new(60, 25)
-$numDX.Minimum = 0; $numDX.Maximum = 3840; $numDX.Value = 860
+$numDX.Minimum = 0; $numDX.Maximum = 3840; $numDX.Value = 1100
 $form.Controls.Add($numDX)
 
 $numDY = New-Object System.Windows.Forms.NumericUpDown
 $numDY.Location = [System.Drawing.Point]::new(85, 145); $numDY.Size = [System.Drawing.Size]::new(60, 25)
-$numDY.Minimum = 0; $numDY.Maximum = 2160; $numDY.Value = 700
+$numDY.Minimum = 0; $numDY.Maximum = 2160; $numDY.Value = 1380
 $form.Controls.Add($numDY)
 
 $numDW = New-Object System.Windows.Forms.NumericUpDown
 $numDW.Location = [System.Drawing.Point]::new(155, 145); $numDW.Size = [System.Drawing.Size]::new(60, 25)
-$numDW.Minimum = 10; $numDW.Maximum = 500; $numDW.Value = 200
+$numDW.Minimum = 10; $numDW.Maximum = 500; $numDW.Value = 300
 $form.Controls.Add($numDW)
 
 $numDH = New-Object System.Windows.Forms.NumericUpDown
@@ -128,7 +128,7 @@ $form.Controls.Add($lblThresh)
 
 $numThresh = New-Object System.Windows.Forms.NumericUpDown
 $numThresh.Location = [System.Drawing.Point]::new(120, 178); $numThresh.Size = [System.Drawing.Size]::new(60, 25)
-$numThresh.Minimum = 10; $numThresh.Maximum = 255; $numThresh.Value = 100
+$numThresh.Minimum = 10; $numThresh.Maximum = 255; $numThresh.Value = 120
 $form.Controls.Add($numThresh)
 
 function StartFish {

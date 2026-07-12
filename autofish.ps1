@@ -83,13 +83,17 @@ public class ScreenCapture {
 "@ -ReferencedAssemblies "System.Windows.Forms","System.Drawing"
 
 $script:f = $false; $script:st = 0; $script:tk = 0; $script:wait = 3; $script:reel = 15
-$script:prevF3 = $false; $script:prevF4 = $false; $script:prevF5 = $false
+$script:prevF3 = $false; $script:prevF4 = $false; $script:prevF5 = $false; $script:prevF6 = $false
 $script:detectTick = 0; $script:detectHit = 0; $script:scanning = $false
 $script:refPixels = $null; $script:hasRef = $false
 
+# Mode-specific settings
+$script:bx = 900; $script:by = 1380; $script:bw = 110; $script:bh = 18; $script:bt = 120
+$script:rx = 900; $script:ry = 1380; $script:rw = 110; $script:rh = 18
+
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "AutoFish Spin"
-$form.Size = [System.Drawing.Size]::new(400, 340)
+$form.Size = [System.Drawing.Size]::new(400, 370)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedSingle"
 $form.MaximizeBox = $false
@@ -115,7 +119,7 @@ $form.Controls.Add($numReel)
 $txtStatus = New-Object System.Windows.Forms.TextBox
 $txtStatus.Name = "txtStatus"
 $txtStatus.Text = "Остановлен"
-$txtStatus.Location = [System.Drawing.Point]::new(15, 85); $txtStatus.Size = [System.Drawing.Size]::new(360, 50)
+$txtStatus.Location = [System.Drawing.Point]::new(15, 85); $txtStatus.Size = [System.Drawing.Size]::new(360, 40)
 $txtStatus.ForeColor = [System.Drawing.Color]::Red
 $txtStatus.Font = [System.Drawing.Font]::new("Arial", 9)
 $txtStatus.ReadOnly = $true; $txtStatus.BackColor = [System.Drawing.Color]::White
@@ -124,49 +128,74 @@ $form.Controls.Add($txtStatus)
 
 $lblDetect = New-Object System.Windows.Forms.Label
 $lblDetect.Text = "Область захвата (X,Y,W,H):"
-$lblDetect.Location = [System.Drawing.Point]::new(15, 145); $lblDetect.Size = [System.Drawing.Size]::new(200, 20)
+$lblDetect.Location = [System.Drawing.Point]::new(15, 135); $lblDetect.Size = [System.Drawing.Size]::new(200, 20)
 $form.Controls.Add($lblDetect)
 
 $numDX = New-Object System.Windows.Forms.NumericUpDown
-$numDX.Location = [System.Drawing.Point]::new(15, 170); $numDX.Size = [System.Drawing.Size]::new(60, 25)
+$numDX.Location = [System.Drawing.Point]::new(15, 160); $numDX.Size = [System.Drawing.Size]::new(60, 25)
 $numDX.Minimum = 0; $numDX.Maximum = 3840; $numDX.Value = 900
 $form.Controls.Add($numDX)
 
 $numDY = New-Object System.Windows.Forms.NumericUpDown
-$numDY.Location = [System.Drawing.Point]::new(85, 170); $numDY.Size = [System.Drawing.Size]::new(60, 25)
+$numDY.Location = [System.Drawing.Point]::new(85, 160); $numDY.Size = [System.Drawing.Size]::new(60, 25)
 $numDY.Minimum = 0; $numDY.Maximum = 2160; $numDY.Value = 1380
 $form.Controls.Add($numDY)
 
 $numDW = New-Object System.Windows.Forms.NumericUpDown
-$numDW.Location = [System.Drawing.Point]::new(155, 170); $numDW.Size = [System.Drawing.Size]::new(60, 25)
+$numDW.Location = [System.Drawing.Point]::new(155, 160); $numDW.Size = [System.Drawing.Size]::new(60, 25)
 $numDW.Minimum = 10; $numDW.Maximum = 500; $numDW.Value = 110
 $form.Controls.Add($numDW)
 
 $numDH = New-Object System.Windows.Forms.NumericUpDown
-$numDH.Location = [System.Drawing.Point]::new(225, 170); $numDH.Size = [System.Drawing.Size]::new(60, 25)
+$numDH.Location = [System.Drawing.Point]::new(225, 160); $numDH.Size = [System.Drawing.Size]::new(60, 25)
 $numDH.Minimum = 1; $numDH.Maximum = 100; $numDH.Value = 18
 $form.Controls.Add($numDH)
 
 $lblMode = New-Object System.Windows.Forms.Label
-$lblMode.Text = "Режим:"; $lblMode.Location = [System.Drawing.Point]::new(15, 205); $lblMode.Size = [System.Drawing.Size]::new(60, 20)
+$lblMode.Text = "Режим:"; $lblMode.Location = [System.Drawing.Point]::new(15, 195); $lblMode.Size = [System.Drawing.Size]::new(50, 20)
 $form.Controls.Add($lblMode)
 
 $cmbMode = New-Object System.Windows.Forms.ComboBox
-$cmbMode.Location = [System.Drawing.Point]::new(75, 203); $cmbMode.Size = [System.Drawing.Size]::new(120, 25)
+$cmbMode.Location = [System.Drawing.Point]::new(65, 193); $cmbMode.Size = [System.Drawing.Size]::new(100, 25)
 $cmbMode.DropDownStyle = "DropDownList"
 $cmbMode.Items.Add("Яркость"); $cmbMode.Items.Add("Эталон")
 $cmbMode.SelectedIndex = 0
-$form.Controls.Add($cmbMode)
 
 $lblThresh = New-Object System.Windows.Forms.Label
 $lblThresh.Text = "Порог яркости:"
-$lblThresh.Location = [System.Drawing.Point]::new(15, 235); $lblThresh.Size = [System.Drawing.Size]::new(100, 20)
+$lblThresh.Location = [System.Drawing.Point]::new(180, 195); $lblThresh.Size = [System.Drawing.Size]::new(100, 20)
 $form.Controls.Add($lblThresh)
 
 $numThresh = New-Object System.Windows.Forms.NumericUpDown
-$numThresh.Location = [System.Drawing.Point]::new(120, 233); $numThresh.Size = [System.Drawing.Size]::new(60, 25)
+$numThresh.Location = [System.Drawing.Point]::new(280, 193); $numThresh.Size = [System.Drawing.Size]::new(60, 25)
 $numThresh.Minimum = 10; $numThresh.Maximum = 255; $numThresh.Value = 120
 $form.Controls.Add($numThresh)
+
+# Save/load settings on mode switch
+$cmbMode.Add_SelectedIndexChanged({
+    $mode = $cmbMode.SelectedItem
+    # Save current values to previous mode
+    if ($script:prevMode -eq "Яркость") {
+        $script:bx = [int]$numDX.Value; $script:by = [int]$numDY.Value
+        $script:bw = [int]$numDW.Value; $script:bh = [int]$numDH.Value
+        $script:bt = [int]$numThresh.Value
+    } elseif ($script:prevMode -eq "Эталон") {
+        $script:rx = [int]$numDX.Value; $script:ry = [int]$numDY.Value
+        $script:rw = [int]$numDW.Value; $script:rh = [int]$numDH.Value
+    }
+    # Load values for new mode
+    if ($mode -eq "Яркость") {
+        $numDX.Value = $script:bx; $numDY.Value = $script:by
+        $numDW.Value = $script:bw; $numDH.Value = $script:bh
+        $numThresh.Value = $script:bt
+    } else {
+        $numDX.Value = $script:rx; $numDY.Value = $script:ry
+        $numDW.Value = $script:rw; $numDH.Value = $script:rh
+    }
+    $script:prevMode = $mode
+})
+$form.Controls.Add($cmbMode)
+$script:prevMode = "Яркость"
 
 function StartFish {
     $script:wait = [int]$numWait.Value; $script:reel = [int]$numReel.Value
@@ -195,8 +224,7 @@ function Scan {
             $g.CopyFromScreen($dx, $dy, 0, 0, [System.Drawing.Size]::new($dw, $dh))
             $g.Dispose()
             $path = "E:\Project\autofish spin\autofish_scan.png"
-            $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
-            $bmp.Dispose()
+            $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
             $txtStatus.Text = "Совпадение: $pct%`r`nСкрин: $path"
         } else {
             $thresh = [int]$numThresh.Value
@@ -207,23 +235,14 @@ function Scan {
             $g.CopyFromScreen($dx, $dy, 0, 0, [System.Drawing.Size]::new($dw, $dh))
             $g.Dispose()
             $path = "E:\Project\autofish spin\autofish_scan.png"
-            $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
-            $bmp.Dispose()
+            $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
             $txtStatus.Text = "Ярких $bright/$total ($pct%). Скрин: $path"
         }
     } catch { $txtStatus.Text = "Ошибка: $_" }
     finally { $script:scanning = $false }
 }
 
-$btnScan = New-Object System.Windows.Forms.Button
-$btnScan.Text = "Скан"; $btnScan.Location = [System.Drawing.Point]::new(270, 170); $btnScan.Size = [System.Drawing.Size]::new(100, 25)
-$btnScan.Add_Click({ Scan })
-$form.Controls.Add($btnScan)
-
-$btnRef = New-Object System.Windows.Forms.Button
-$btnRef.Text = "Запомнить"
-$btnRef.Location = [System.Drawing.Point]::new(270, 203); $btnRef.Size = [System.Drawing.Size]::new(100, 25)
-$btnRef.Add_Click({
+function Memorize {
     $dx = [int]$numDX.Value; $dy = [int]$numDY.Value
     $dw = [int]$numDW.Value; $dh = [int]$numDH.Value
     try {
@@ -231,27 +250,39 @@ $btnRef.Add_Click({
         $script:hasRef = $true
         $txtStatus.Text = "Эталон запомнен (${dw}x${dh})"
     } catch { $txtStatus.Text = "Ошибка: $_" }
-})
+}
+
+$btnScan = New-Object System.Windows.Forms.Button
+$btnScan.Text = "Скан(F6)"; $btnScan.Location = [System.Drawing.Point]::new(270, 160); $btnScan.Size = [System.Drawing.Size]::new(100, 25)
+$btnScan.Add_Click({ Scan })
+$form.Controls.Add($btnScan)
+
+$btnRef = New-Object System.Windows.Forms.Button
+$btnRef.Text = "Запомнить(F5)"
+$btnRef.Location = [System.Drawing.Point]::new(270, 193); $btnRef.Size = [System.Drawing.Size]::new(100, 25)
+$btnRef.Add_Click({ Memorize })
 $form.Controls.Add($btnRef)
 
 $btnStart = New-Object System.Windows.Forms.Button
-$btnStart.Text = "Старт"; $btnStart.Location = [System.Drawing.Point]::new(60, 265); $btnStart.Size = [System.Drawing.Size]::new(80, 30)
+$btnStart.Text = "Старт"; $btnStart.Location = [System.Drawing.Point]::new(60, 240); $btnStart.Size = [System.Drawing.Size]::new(80, 30)
 $btnStart.Add_Click({ if ($script:f) { StopFish } else { StartFish } })
 $form.Controls.Add($btnStart)
 
 $btnExit = New-Object System.Windows.Forms.Button
-$btnExit.Text = "Выход"; $btnExit.Location = [System.Drawing.Point]::new(170, 265); $btnExit.Size = [System.Drawing.Size]::new(80, 30)
+$btnExit.Text = "Выход"; $btnExit.Location = [System.Drawing.Point]::new(170, 240); $btnExit.Size = [System.Drawing.Size]::new(80, 30)
 $btnExit.Add_Click({ $form.Close() })
 $form.Controls.Add($btnExit)
 
 $tm = New-Object System.Windows.Forms.Timer
 $tm.Interval = 100
 $tm.Add_Tick({
-    $f3 = [WinAPI]::KeyDown(0x72); $f4 = [WinAPI]::KeyDown(0x73); $f5 = [WinAPI]::KeyDown(0x74)
+    $f3 = [WinAPI]::KeyDown(0x72); $f4 = [WinAPI]::KeyDown(0x73)
+    $f5 = [WinAPI]::KeyDown(0x74); $f6 = [WinAPI]::KeyDown(0x75)
     if ($f3 -and -not $script:prevF3 -and -not $script:f) { StartFish }
     if ($f4 -and -not $script:prevF4 -and $script:f) { StopFish }
-    if ($f5 -and -not $script:prevF5 -and -not $script:scanning) { Scan }
-    $script:prevF3 = $f3; $script:prevF4 = $f4; $script:prevF5 = $f5
+    if ($f5 -and -not $script:prevF5 -and -not $script:scanning) { Memorize }
+    if ($f6 -and -not $script:prevF6 -and -not $script:scanning) { Scan }
+    $script:prevF3 = $f3; $script:prevF4 = $f4; $script:prevF5 = $f5; $script:prevF6 = $f6
     if (-not $script:f) { return }
 
     if ($script:st -eq 1) {
@@ -277,8 +308,7 @@ $tm.Add_Tick({
                 try {
                     $match = [ScreenCapture]::MatchLuma($script:refPixels, [int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, 30)
                     if ($match -gt 0.85) {
-                        $script:detectHit++
-                        if ($script:detectHit -ge 3) {
+                        $script:detectHit++; if ($script:detectHit -ge 3) {
                             [WinAPI]::SM([WinAPI]::LMU)
                             $script:st = 1; $script:tk = 0
                             [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)

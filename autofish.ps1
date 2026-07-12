@@ -49,7 +49,8 @@ public class ScreenCapture {
             Marshal.Copy(data.Scan0, pixels, 0, pixels.Length);
             bmp.UnlockBits(data);
             int bright = 0;
-            for (int i = 0; i < pixels.Length; i += 3) {
+            int len = (pixels.Length / 3) * 3;
+            for (int i = 0; i < len; i += 3) {
                 int luma = (pixels[i + 2] * 299 + pixels[i + 1] * 587 + pixels[i] * 114) / 1000;
                 if (luma > threshold) bright++;
             }

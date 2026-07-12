@@ -54,19 +54,17 @@ public class ScreenCapture {
 }
 "@ -ReferencedAssemblies "System.Windows.Forms","System.Drawing"
 
-# Load WinRT for OCR
-Add-Type -AssemblyName System.Runtime.WindowsRuntime
-$null = [Windows.Media.Ocr.OcrEngine, Windows.Foundation, ContentType = WindowsRuntime]
-$null = [Windows.Graphics.Imaging.BitmapDecoder, Windows.Foundation, ContentType = WindowsRuntime]
-$null = [Windows.Storage.Streams.InMemoryRandomAccessStream, Windows.Foundation, ContentType = WindowsRuntime]
-$null = [Windows.Globalization.Language, Windows.Foundation, ContentType = WindowsRuntime]
-$null = [Windows.Security.Cryptography.CryptographicBuffer, Windows.Security.Cryptography, ContentType = WindowsRuntime]
-
 $ocrEngine = $null
 try {
+    Add-Type -AssemblyName System.Runtime.WindowsRuntime
+    $null = [Windows.Media.Ocr.OcrEngine, Windows.Foundation, ContentType = WindowsRuntime]
+    $null = [Windows.Graphics.Imaging.BitmapDecoder, Windows.Foundation, ContentType = WindowsRuntime]
+    $null = [Windows.Storage.Streams.InMemoryRandomAccessStream, Windows.Foundation, ContentType = WindowsRuntime]
+    $null = [Windows.Globalization.Language, Windows.Foundation, ContentType = WindowsRuntime]
+    $null = [Windows.Security.Cryptography.CryptographicBuffer, Windows.Security.Cryptography, ContentType = WindowsRuntime]
     $ocrLang = [Windows.Globalization.Language]::new("ru-RU")
     $ocrEngine = [Windows.Media.Ocr.OcrEngine]::TryCreateFromLanguage($ocrLang)
-} catch {}
+} catch { }
 
 function Get-ScreenText($x, $y, $w, $h) {
     $bmp = New-Object System.Drawing.Bitmap([Math]::Max(1,$w), [Math]::Max(1,$h))

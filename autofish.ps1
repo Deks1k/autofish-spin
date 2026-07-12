@@ -248,7 +248,7 @@ $tm.Add_Tick({
     $f3 = [WinAPI]::KeyDown(0x72); $f4 = [WinAPI]::KeyDown(0x73); $f5 = [WinAPI]::KeyDown(0x74)
     if ($f3 -and -not $script:prevF3 -and -not $script:f) { StartFish }
     if ($f4 -and -not $script:prevF4 -and $script:f) { StopFish }
-    if ($f5 -and -not $script:prevF5 -and -not $script:f) { $btnTest.PerformClick() }
+    if ($f5 -and -not $script:prevF5) { $btnTest.PerformClick() }
     $script:prevF3 = $f3; $script:prevF4 = $f4; $script:prevF5 = $f5
     if (-not $script:f) { return }
 

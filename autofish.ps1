@@ -91,7 +91,7 @@ function Get-ScreenText($x, $y, $w, $h) {
 }
 
 $script:f = $false; $script:st = 0; $script:tk = 0; $script:wait = 3; $script:reel = 15
-$script:prevF3 = $false; $script:prevF4 = $false; $script:detectTick = 0; $script:detectHit = 0
+$script:prevF3 = $false; $script:prevF4 = $false; $script:prevF5 = $false; $script:detectTick = 0; $script:detectHit = 0
 
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "AutoFish Spin"
@@ -245,10 +245,11 @@ $form.Controls.Add($btnExit)
 $tm = New-Object System.Windows.Forms.Timer
 $tm.Interval = 100
 $tm.Add_Tick({
-    $f3 = [WinAPI]::KeyDown(0x72); $f4 = [WinAPI]::KeyDown(0x73)
+    $f3 = [WinAPI]::KeyDown(0x72); $f4 = [WinAPI]::KeyDown(0x73); $f5 = [WinAPI]::KeyDown(0x74)
     if ($f3 -and -not $script:prevF3 -and -not $script:f) { StartFish }
     if ($f4 -and -not $script:prevF4 -and $script:f) { StopFish }
-    $script:prevF3 = $f3; $script:prevF4 = $f4
+    if ($f5 -and -not $script:prevF5 -and -not $script:f) { $btnTest.PerformClick() }
+    $script:prevF3 = $f3; $script:prevF4 = $f4; $script:prevF5 = $f5
     if (-not $script:f) { return }
 
     if ($script:st -eq 1) {

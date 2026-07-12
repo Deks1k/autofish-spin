@@ -200,15 +200,13 @@ function StopFish {
 $btnTest = New-Object System.Windows.Forms.Button
 $btnTest.Text = "Скан"; $btnTest.Location = [System.Drawing.Point]::new(270, 170); $btnTest.Size = [System.Drawing.Size]::new(100, 25)
 $btnTest.Add_Click({
-    $dx = [int]$numDX.Value; $dy = [int]$numDY.Value
-    $dw = [int]$numDW.Value; $dh = [int]$numDH.Value
     $mode = $cmbMode.SelectedItem
     try {
         if ($mode -eq "OCR") {
-            $text = Get-ScreenText $dx $dy $dw $dh
-            $bmp = New-Object System.Drawing.Bitmap($dw, $dh)
+            $text = Get-ScreenText 900 1380 300 40
+            $bmp = New-Object System.Drawing.Bitmap(300, 40)
             $g = [System.Drawing.Graphics]::FromImage($bmp)
-            $g.CopyFromScreen($dx, $dy, 0, 0, [System.Drawing.Size]::new($dw, $dh))
+            $g.CopyFromScreen(900, 1380, 0, 0, [System.Drawing.Size]::new(300, 40))
             $g.Dispose()
             $path = "E:\Project\autofish spin\autofish_scan.png"
             $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
@@ -278,7 +276,7 @@ $tm.Add_Tick({
             if ($script:detectTick -ge 10) {
                 $script:detectTick = 0
                 try {
-                    $text = Get-ScreenText ([int]$numDX.Value) ([int]$numDY.Value) ([int]$numDW.Value) ([int]$numDH.Value)
+                    $text = Get-ScreenText 900 1380 300 40
                     if ($text -and ($text -match "готова" -or $text -match "заброс" -or $text -match "снасть")) {
                         [WinAPI]::SM([WinAPI]::LMU)
                         $script:st = 1; $script:tk = 0

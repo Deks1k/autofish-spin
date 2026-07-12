@@ -60,12 +60,50 @@ public class ScreenCapture {
 }
 "@ -ReferencedAssemblies "System.Windows.Forms","System.Drawing"
 
+# Load WinRT for OCR
+Add-Type -AssemblyName System.Runtime.WindowsRuntime
+$null = [Windows.Media.Ocr.OcrEngine, Windows.Foundation, ContentType = WindowsRuntime]
+$null = [Windows.Graphics.Imaging.BitmapDecoder, Windows.Foundation, ContentType = WindowsRuntime]
+$null = [Windows.Storage.Streams.InMemoryRandomAccessStream, Windows.Foundation, ContentType = WindowsRuntime]
+$null = [Windows.Globalization.Language, Windows.Foundation, ContentType = WindowsRuntime]
+
+$ocrEngine = $null
+try {
+    $ocrLang = [Windows.Globalization.Language]::new("ru-RU")
+    $ocrEngine = [Windows.Media.Ocr.OcrEngine]::TryCreateFromLanguage($ocrLang)
+} catch {}
+
+function Get-ScreenText($x, $y, $w, $h) {
+    $bmp = New-Object System.Drawing.Bitmap([Math]::Max(1,$w), [Math]::Max(1,$h))
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.CopyFromScreen($x, $y, 0, 0, [System.Drawing.Size]::new($w, $h))
+    $g.Dispose()
+    $ms = New-Object System.IO.MemoryStream
+    $bmp.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png)
+    $ms.Position = 0
+    $bmp.Dispose()
+    $ras = [Windows.Storage.Streams.InMemoryRandomAccessStream]::new()
+    $out = $ras.AsStreamForWrite()
+    $ms.CopyTo($out); $out.Flush()
+    $ms.Dispose(); $ras.Seek(0)
+    $decoderOp = [Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($ras)
+    while (-not $decoderOp.IsCompleted) { Start-Sleep -Milliseconds 10 }
+    $decoder = $decoderOp.GetResults()
+    $sbOp = $decoder.GetSoftwareBitmapAsync()
+    while (-not $sbOp.IsCompleted) { Start-Sleep -Milliseconds 10 }
+    $sb = $sbOp.GetResults()
+    $ocrOp = $ocrEngine.RecognizeAsync($sb)
+    while (-not $ocrOp.IsCompleted) { Start-Sleep -Milliseconds 10 }
+    $result = $ocrOp.GetResults()
+    return $result.Text
+}
+
 $script:f = $false; $script:st = 0; $script:tk = 0; $script:wait = 3; $script:reel = 15
 $script:prevF3 = $false; $script:prevF4 = $false; $script:detectTick = 0; $script:detectHit = 0
 
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "AutoFish Spin"
-$form.Size = [System.Drawing.Size]::new(400, 300)
+$form.Size = [System.Drawing.Size]::new(400, 340)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedSingle"
 $form.MaximizeBox = $false
@@ -91,56 +129,70 @@ $form.Controls.Add($numReel)
 $txtStatus = New-Object System.Windows.Forms.TextBox
 $txtStatus.Name = "txtStatus"
 $txtStatus.Text = "Остановлен"
-$txtStatus.Location = [System.Drawing.Point]::new(15, 85); $txtStatus.Size = [System.Drawing.Size]::new(360, 25)
+$txtStatus.Location = [System.Drawing.Point]::new(15, 85); $txtStatus.Size = [System.Drawing.Size]::new(360, 50)
 $txtStatus.ForeColor = [System.Drawing.Color]::Red
-$txtStatus.Font = [System.Drawing.Font]::new("Arial", 10, [System.Drawing.FontStyle]::Bold)
+$txtStatus.Font = [System.Drawing.Font]::new("Arial", 9)
 $txtStatus.ReadOnly = $true
 $txtStatus.BackColor = [System.Drawing.Color]::White
 $txtStatus.BorderStyle = "FixedSingle"
+$txtStatus.Multiline = $true
 $form.Controls.Add($txtStatus)
 
-# Detection region settings
 $lblDetect = New-Object System.Windows.Forms.Label
 $lblDetect.Text = "Область захвата (X,Y,W,H):"
-$lblDetect.Location = [System.Drawing.Point]::new(15, 120); $lblDetect.Size = [System.Drawing.Size]::new(200, 20)
+$lblDetect.Location = [System.Drawing.Point]::new(15, 145); $lblDetect.Size = [System.Drawing.Size]::new(200, 20)
 $form.Controls.Add($lblDetect)
 
 $numDX = New-Object System.Windows.Forms.NumericUpDown
-$numDX.Location = [System.Drawing.Point]::new(15, 145); $numDX.Size = [System.Drawing.Size]::new(60, 25)
-$numDX.Minimum = 0; $numDX.Maximum = 3840; $numDX.Value = 850
+$numDX.Location = [System.Drawing.Point]::new(15, 170); $numDX.Size = [System.Drawing.Size]::new(60, 25)
+$numDX.Minimum = 0; $numDX.Maximum = 3840; $numDX.Value = 900
 $form.Controls.Add($numDX)
 
 $numDY = New-Object System.Windows.Forms.NumericUpDown
-$numDY.Location = [System.Drawing.Point]::new(85, 145); $numDY.Size = [System.Drawing.Size]::new(60, 25)
+$numDY.Location = [System.Drawing.Point]::new(85, 170); $numDY.Size = [System.Drawing.Size]::new(60, 25)
 $numDY.Minimum = 0; $numDY.Maximum = 2160; $numDY.Value = 1380
 $form.Controls.Add($numDY)
 
 $numDW = New-Object System.Windows.Forms.NumericUpDown
-$numDW.Location = [System.Drawing.Point]::new(155, 145); $numDW.Size = [System.Drawing.Size]::new(60, 25)
-$numDW.Minimum = 10; $numDW.Maximum = 500; $numDW.Value = 157
+$numDW.Location = [System.Drawing.Point]::new(155, 170); $numDW.Size = [System.Drawing.Size]::new(60, 25)
+$numDW.Minimum = 10; $numDW.Maximum = 500; $numDW.Value = 110
 $form.Controls.Add($numDW)
 
 $numDH = New-Object System.Windows.Forms.NumericUpDown
-$numDH.Location = [System.Drawing.Point]::new(225, 145); $numDH.Size = [System.Drawing.Size]::new(60, 25)
+$numDH.Location = [System.Drawing.Point]::new(225, 170); $numDH.Size = [System.Drawing.Size]::new(60, 25)
 $numDH.Minimum = 1; $numDH.Maximum = 100; $numDH.Value = 18
 $form.Controls.Add($numDH)
 
+$lblMode = New-Object System.Windows.Forms.Label
+$lblMode.Text = "Режим:"
+$lblMode.Location = [System.Drawing.Point]::new(15, 205); $lblMode.Size = [System.Drawing.Size]::new(60, 20)
+$form.Controls.Add($lblMode)
+
+$cmbMode = New-Object System.Windows.Forms.ComboBox
+$cmbMode.Location = [System.Drawing.Point]::new(75, 203); $cmbMode.Size = [System.Drawing.Size]::new(120, 25)
+$cmbMode.DropDownStyle = "DropDownList"
+$cmbMode.Items.Add("Яркость"); $cmbMode.Items.Add("OCR")
+$cmbMode.SelectedIndex = 0
+$form.Controls.Add($cmbMode)
+
 $lblThresh = New-Object System.Windows.Forms.Label
 $lblThresh.Text = "Порог яркости:"
-$lblThresh.Location = [System.Drawing.Point]::new(15, 180); $lblThresh.Size = [System.Drawing.Size]::new(100, 20)
+$lblThresh.Location = [System.Drawing.Point]::new(15, 235); $lblThresh.Size = [System.Drawing.Size]::new(100, 20)
 $form.Controls.Add($lblThresh)
 
 $numThresh = New-Object System.Windows.Forms.NumericUpDown
-$numThresh.Location = [System.Drawing.Point]::new(120, 178); $numThresh.Size = [System.Drawing.Size]::new(60, 25)
+$numThresh.Location = [System.Drawing.Point]::new(120, 233); $numThresh.Size = [System.Drawing.Size]::new(60, 25)
 $numThresh.Minimum = 10; $numThresh.Maximum = 255; $numThresh.Value = 120
 $form.Controls.Add($numThresh)
 
 function StartFish {
     $script:wait = [int]$numWait.Value
     $script:reel = [int]$numReel.Value
-    $script:f = $true; $script:st = 1; $script:tk = 0; $script:detectTick = 0
+    $script:f = $true; $script:st = 1; $script:tk = 0; $script:detectTick = 0; $script:detectHit = 0
     $btnStart.Text = "Стоп"
-    $txtStatus.Text = "Заброс..."; $txtStatus.ForeColor = "Green"
+    $mode = $cmbMode.SelectedItem
+    $txtStatus.Text = "Заброс... ($mode)"
+    $txtStatus.ForeColor = "Green"
 }
 
 function StopFish {
@@ -150,22 +202,36 @@ function StopFish {
 }
 
 $btnTest = New-Object System.Windows.Forms.Button
-$btnTest.Text = "Скан"; $btnTest.Location = [System.Drawing.Point]::new(270, 145); $btnTest.Size = [System.Drawing.Size]::new(100, 25)
+$btnTest.Text = "Скан"; $btnTest.Location = [System.Drawing.Point]::new(270, 170); $btnTest.Size = [System.Drawing.Size]::new(100, 25)
 $btnTest.Add_Click({
     $dx = [int]$numDX.Value; $dy = [int]$numDY.Value
     $dw = [int]$numDW.Value; $dh = [int]$numDH.Value
-    $thresh = [int]$numThresh.Value
+    $mode = $cmbMode.SelectedItem
     try {
-        $bright = [ScreenCapture]::CountBrightPixels($dx, $dy, $dw, $dh, $thresh)
-        $total = $dw * $dh; $pct = [Math]::Round($bright / $total * 100, 1)
-        $bmp = New-Object System.Drawing.Bitmap($dw, $dh)
-        $g = [System.Drawing.Graphics]::FromImage($bmp)
-        $g.CopyFromScreen($dx, $dy, 0, 0, [System.Drawing.Size]::new($dw, $dh))
-        $g.Dispose()
-        $path = "$env:USERPROFILE\Desktop\autofish_scan.png"
-        $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
-        $bmp.Dispose()
-        $txtStatus.Text = "Ярких $bright/$total ($pct%). Скрин: $path"
+        if ($mode -eq "OCR") {
+            if (-not $ocrEngine) { $txtStatus.Text = "OCR недоступен"; return }
+            $text = Get-ScreenText $dx $dy $dw $dh
+            $bmp = New-Object System.Drawing.Bitmap($dw, $dh)
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.CopyFromScreen($dx, $dy, 0, 0, [System.Drawing.Size]::new($dw, $dh))
+            $g.Dispose()
+            $path = "$env:USERPROFILE\Desktop\autofish_scan.png"
+            $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
+            $bmp.Dispose()
+            $txtStatus.Text = "OCR: [$text]`r`nСкрин: $path"
+        } else {
+            $thresh = [int]$numThresh.Value
+            $bright = [ScreenCapture]::CountBrightPixels($dx, $dy, $dw, $dh, $thresh)
+            $total = $dw * $dh; $pct = [Math]::Round($bright / $total * 100, 1)
+            $bmp = New-Object System.Drawing.Bitmap($dw, $dh)
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.CopyFromScreen($dx, $dy, 0, 0, [System.Drawing.Size]::new($dw, $dh))
+            $g.Dispose()
+            $path = "$env:USERPROFILE\Desktop\autofish_scan.png"
+            $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
+            $bmp.Dispose()
+            $txtStatus.Text = "Ярких $bright/$total ($pct%). Скрин: $path"
+        }
     } catch {
         $txtStatus.Text = "Ошибка: $_"
     }
@@ -173,14 +239,14 @@ $btnTest.Add_Click({
 $form.Controls.Add($btnTest)
 
 $btnStart = New-Object System.Windows.Forms.Button
-$btnStart.Text = "Старт"; $btnStart.Location = [System.Drawing.Point]::new(60, 215); $btnStart.Size = [System.Drawing.Size]::new(80, 30)
+$btnStart.Text = "Старт"; $btnStart.Location = [System.Drawing.Point]::new(60, 265); $btnStart.Size = [System.Drawing.Size]::new(80, 30)
 $btnStart.Add_Click({
     if ($script:f) { StopFish } else { StartFish }
 })
 $form.Controls.Add($btnStart)
 
 $btnExit = New-Object System.Windows.Forms.Button
-$btnExit.Text = "Выход"; $btnExit.Location = [System.Drawing.Point]::new(170, 215); $btnExit.Size = [System.Drawing.Size]::new(80, 30)
+$btnExit.Text = "Выход"; $btnExit.Location = [System.Drawing.Point]::new(170, 265); $btnExit.Size = [System.Drawing.Size]::new(80, 30)
 $btnExit.Add_Click({ $form.Close() })
 $form.Controls.Add($btnExit)
 
@@ -188,12 +254,9 @@ $tm = New-Object System.Windows.Forms.Timer
 $tm.Interval = 100
 $tm.Add_Tick({
     $f3 = [WinAPI]::KeyDown(0x72); $f4 = [WinAPI]::KeyDown(0x73)
-
     if ($f3 -and -not $script:prevF3 -and -not $script:f) { StartFish }
     if ($f4 -and -not $script:prevF4 -and $script:f) { StopFish }
-
     $script:prevF3 = $f3; $script:prevF4 = $f4
-
     if (-not $script:f) { return }
 
     if ($script:st -eq 1) {
@@ -213,34 +276,47 @@ $tm.Add_Tick({
         }
     } elseif ($script:st -eq 3) {
         $script:tk++; $script:detectTick++
-        # Check screen every 500ms (5 ticks)
-        if ($script:detectTick -ge 5) {
-            $script:detectTick = 0
-            $dx = [int]$numDX.Value; $dy = [int]$numDY.Value
-            $dw = [int]$numDW.Value; $dh = [int]$numDH.Value
-            $thresh = [int]$numThresh.Value
-            try {
-                $bright = [ScreenCapture]::CountBrightPixels($dx, $dy, $dw, $dh, $thresh)
-                $total = $dw * $dh
-                $pct = $bright / $total
-                # If > 5% bright pixels -> possible text
-                if ($pct -gt 0.05) {
-                    $script:detectHit++
-                    # 3 consecutive hits (~1.5s) -> text confirmed
-                    if ($script:detectHit -ge 3) {
-                        [WinAPI]::SM([WinAPI]::LMU)
-                        $script:st = 1; $script:tk = 0
-                        [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
-                        $txtStatus.Text = "Заброс..."
-                    }
-                } else {
-                    $script:detectHit = 0
+        $mode = $cmbMode.SelectedItem
+        if ($mode -eq "OCR") {
+            # Every 1000ms (10 ticks) — OCR is slower
+            if ($script:detectTick -ge 10) {
+                $script:detectTick = 0
+                if ($ocrEngine) {
+                    try {
+                        $text = Get-ScreenText ([int]$numDX.Value) ([int]$numDY.Value) ([int]$numDW.Value) ([int]$numDH.Value)
+                        if ($text -and ($text -match "готова" -or $text -match "заброс" -or $text -match "снасть")) {
+                            [WinAPI]::SM([WinAPI]::LMU)
+                            $script:st = 1; $script:tk = 0
+                            [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
+                            $txtStatus.Text = "Заброс..."
+                        }
+                    } catch {}
                 }
-            } catch {
-                # ignore capture errors
+            }
+        } else {
+            # Brightness mode every 500ms (5 ticks)
+            if ($script:detectTick -ge 5) {
+                $script:detectTick = 0
+                $dx = [int]$numDX.Value; $dy = [int]$numDY.Value
+                $dw = [int]$numDW.Value; $dh = [int]$numDH.Value
+                $thresh = [int]$numThresh.Value
+                try {
+                    $bright = [ScreenCapture]::CountBrightPixels($dx, $dy, $dw, $dh, $thresh)
+                    $total = $dw * $dh; $pct = $bright / $total
+                    if ($pct -gt 0.05) {
+                        $script:detectHit++
+                        if ($script:detectHit -ge 3) {
+                            [WinAPI]::SM([WinAPI]::LMU)
+                            $script:st = 1; $script:tk = 0
+                            [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
+                            $txtStatus.Text = "Заброс..."
+                        }
+                    } else {
+                        $script:detectHit = 0
+                    }
+                } catch {}
             }
         }
-        # Safety timeout (макс 60с)
         if ($script:tk -ge 600) {
             [WinAPI]::SM([WinAPI]::LMU)
             $script:st = 1; $script:tk = 0

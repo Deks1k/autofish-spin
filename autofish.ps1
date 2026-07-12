@@ -74,19 +74,20 @@ function Get-ScreenText($x, $y, $w, $h) {
     $path = "$env:TEMP\autofish_ocr.png"
     $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
     $bmp.Dispose()
-    $script:p = $path; $script:e = $ocrEngine
-    $task = [System.Threading.Tasks.Task]::Run({
+    $script:p = $path; $script:e = $ocrEngine; $script:ocrResult = ""
+    $task = [System.Threading.Tasks.Task]::Run([Action]{
         function Aw { while (-not $args[0].IsCompleted) { Start-Sleep -Milliseconds 5 }; return $args[0].GetResults() }
-        $f = Aw ([Windows.Storage.StorageFile]::GetFileFromPathAsync($script:p))
-        $s = Aw ($f.OpenReadAsync())
-        $d = Aw ([Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($s))
-        $sb = Aw ($d.GetSoftwareBitmapAsync())
-        $r = Aw ($script:e.RecognizeAsync($sb))
-        return $r.Text
+        try {
+            $f = Aw ([Windows.Storage.StorageFile]::GetFileFromPathAsync($script:p))
+            $s = Aw ($f.OpenReadAsync())
+            $d = Aw ([Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($s))
+            $sb = Aw ($d.GetSoftwareBitmapAsync())
+            $r = Aw ($script:e.RecognizeAsync($sb))
+            $script:ocrResult = $r.Text
+        } catch { $script:ocrResult = "" }
     })
     while (-not $task.IsCompleted) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 10 }
-    if ($task.IsCompleted) { return $task.Result }
-    return ""
+    return $script:ocrResult
 }
 
 $script:f = $false; $script:st = 0; $script:tk = 0; $script:wait = 3; $script:reel = 15

@@ -163,7 +163,7 @@ $btnTest.Add_Click({
         $bmp.Dispose()
         $lblStatus.Text = "Ярких $bright/$total ($pct%). Скрин: $path"
     } catch {
-        $lblStatus.Text = "Ошибка захвата"
+        $lblStatus.Text = "Ошибка: $_"
     }
 })
 $form.Controls.Add($btnTest)

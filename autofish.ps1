@@ -61,7 +61,7 @@ public class ScreenCapture {
 "@ -ReferencedAssemblies "System.Windows.Forms","System.Drawing"
 
 $script:f = $false; $script:st = 0; $script:tk = 0; $script:wait = 3; $script:reel = 15
-$script:prevF3 = $false; $script:prevF4 = $false; $script:detectTick = 0
+$script:prevF3 = $false; $script:prevF4 = $false; $script:detectTick = 0; $script:detectHit = 0
 
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "AutoFish Spin"
@@ -207,7 +207,7 @@ $tm.Add_Tick({
     } elseif ($script:st -eq 2) {
         $script:tk++
         if ($script:tk -ge ($script:wait * 10)) {
-            $script:st = 3; $script:tk = 0; $script:detectTick = 0
+            $script:st = 3; $script:tk = 0; $script:detectTick = 0; $script:detectHit = 0
             [WinAPI]::SM([WinAPI]::LMD)
             $txtStatus.Text = "Мотка..."
         }
@@ -223,12 +223,18 @@ $tm.Add_Tick({
                 $bright = [ScreenCapture]::CountBrightPixels($dx, $dy, $dw, $dh, $thresh)
                 $total = $dw * $dh
                 $pct = $bright / $total
-                # If > 5% bright pixels -> text detected
+                # If > 5% bright pixels -> possible text
                 if ($pct -gt 0.05) {
-                    [WinAPI]::SM([WinAPI]::LMU)
-                    $script:st = 1; $script:tk = 0
-                    [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
-                    $txtStatus.Text = "Заброс..."
+                    $script:detectHit++
+                    # 3 consecutive hits (~1.5s) -> text confirmed
+                    if ($script:detectHit -ge 3) {
+                        [WinAPI]::SM([WinAPI]::LMU)
+                        $script:st = 1; $script:tk = 0
+                        [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
+                        $txtStatus.Text = "Заброс..."
+                    }
+                } else {
+                    $script:detectHit = 0
                 }
             } catch {
                 # ignore capture errors

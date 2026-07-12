@@ -118,7 +118,7 @@ $form.Controls.Add($numDW)
 
 $numDH = New-Object System.Windows.Forms.NumericUpDown
 $numDH.Location = [System.Drawing.Point]::new(225, 145); $numDH.Size = [System.Drawing.Size]::new(60, 25)
-$numDH.Minimum = 10; $numDH.Maximum = 100; $numDH.Value = 30
+$numDH.Minimum = 1; $numDH.Maximum = 100; $numDH.Value = 30
 $form.Controls.Add($numDH)
 
 $lblThresh = New-Object System.Windows.Forms.Label

@@ -288,9 +288,10 @@ $tm.Add_Tick({
     if (-not $script:f) { return }
 
     if ($script:st -eq 1) {
-        if ($script:tk -eq 0) { [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD) }
+        if ($script:tk -eq 0) { [WinAPI]::SK(0x20, 0) }
+        if ($script:tk -eq 2) { [WinAPI]::SK(0x20, 2); [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD) }
         $script:tk++
-        if ($script:tk -ge 10) {
+        if ($script:tk -ge 12) {
             [WinAPI]::SK(0x10, 2); [WinAPI]::SM([WinAPI]::LMU)
             $script:st = 2; $script:tk = 0; $txtStatus.Text = "Ожидание $($script:wait)с..."
         }

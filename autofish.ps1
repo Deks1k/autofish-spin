@@ -226,6 +226,8 @@ function Scan {
             $path = "E:\Project\autofish spin\autofish_scan.png"
             $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
             $txtStatus.Text = "Совпадение: $pct%`r`nСкрин: $path"
+        } elseif ($mode -eq "Ручной") {
+            $txtStatus.Text = "Ручной режим — скан не используется"
         } else {
             $thresh = [int]$numThresh.Value
             $bright = [ScreenCapture]::CountBrightPixels($dx, $dy, $dw, $dh, $thresh)
@@ -237,8 +239,6 @@ function Scan {
             $path = "E:\Project\autofish spin\autofish_scan.png"
             $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
             $txtStatus.Text = "Ярких $bright/$total ($pct%). Скрин: $path"
-        } elseif ($mode -eq "Ручной") {
-            $txtStatus.Text = "Ручной режим — скан не используется"
         }
     } catch { $txtStatus.Text = "Oшибка: $_" }
     finally { $script:scanning = $false }

@@ -20,12 +20,11 @@ public class WinAPI {
     [DllImport("user32.dll")] public static extern uint SendInput(uint n, INPUT[] i, int s);
     [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int vKey);
     public const uint LMD = 0x0002, LMU = 0x0004;
-    public const uint RMD = 0x0008, RMU = 0x0010;
     public const uint KU = 0x0002;
     public const int IM = 0, IK = 1;
     public static void SM(uint f) { INPUT[] i = new INPUT[1]; i[0].type = IM; i[0].ui.mi.dwFlags = f; SendInput(1, i, Marshal.SizeOf(typeof(INPUT))); }
     public static void SK(ushort vk, uint f) { INPUT[] i = new INPUT[1]; i[0].type = IK; i[0].ui.ki.wVk = vk; i[0].ui.ki.dwFlags = f; SendInput(1, i, Marshal.SizeOf(typeof(INPUT))); }
-    public static void Rel() { SK(0x10, KU); SM(LMU); SM(RMU); }
+    public static void Rel() { SK(0x10, KU); SM(LMU); }
     public static bool KeyDown(int vk) { return (GetAsyncKeyState(vk) & 0x8000) != 0; }
 }
 
@@ -85,7 +84,7 @@ public class ScreenCapture {
 
 $script:f = $false; $script:st = 0; $script:tk = 0; $script:wait = 3; $script:reel = 15
 $script:prevF3 = $false; $script:prevF4 = $false; $script:prevF5 = $false; $script:prevF6 = $false
-$script:detectTick = 0; $script:detectHit = 0; $script:scanning = $false; $script:rmbPressed = $false
+$script:detectTick = 0; $script:detectHit = 0; $script:scanning = $false
 $script:refPixels = $null; $script:hasRef = $false
 
 # Mode-specific settings
@@ -200,13 +199,13 @@ $script:prevMode = "Яркость"
 
 function StartFish {
     $script:wait = [int]$numWait.Value; $script:reel = [int]$numReel.Value
-    $script:f = $true; $script:st = 1; $script:tk = 0; $script:detectTick = 0; $script:detectHit = 0; $script:rmbPressed = $false
+    $script:f = $true; $script:st = 1; $script:tk = 0; $script:detectTick = 0; $script:detectHit = 0
     $btnStart.Text = "Стоп"
     $txtStatus.Text = "Заброс..."; $txtStatus.ForeColor = "Green"
 }
 
 function StopFish {
-    $script:f = $false; $script:st = 0; $script:tk = 0; $script:rmbPressed = $false
+    $script:f = $false; $script:st = 0; $script:tk = 0
     [WinAPI]::Rel()
     $btnStart.Text = "Старт"; $txtStatus.Text = "Остановлен"; $txtStatus.ForeColor = "Red"
 }
@@ -313,19 +312,18 @@ $tm.Add_Tick({
             }
         } else {
             $script:detectTick++
-            if (-not $script:rmbPressed -and $script:tk -ge 150) {
-                [WinAPI]::SM([WinAPI]::RMD)
-                $script:rmbPressed = $true
-                $txtStatus.Text = "Мотка+ПКМ..."
-            }
-            $releaseAll = $false
             if ($mode -eq "Эталон" -and $script:hasRef) {
                 if ($script:detectTick -ge 5) {
                     $script:detectTick = 0
                     try {
                         $match = [ScreenCapture]::MatchLuma($script:refPixels, [int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, 30)
                         if ($match -gt 0.85) {
-                            $script:detectHit++; if ($script:detectHit -ge 3) { $releaseAll = $true }
+                            $script:detectHit++; if ($script:detectHit -ge 3) {
+                                [WinAPI]::SM([WinAPI]::LMU)
+                                $script:st = 1; $script:tk = 0
+                                [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
+                                $txtStatus.Text = "Заброс..."
+                            }
                         } else { $script:detectHit = 0 }
                     } catch { }
                 }
@@ -336,15 +334,18 @@ $tm.Add_Tick({
                         $bright = [ScreenCapture]::CountBrightPixels([int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, [int]$numThresh.Value)
                         $total = [int]$numDW.Value * [int]$numDH.Value; $pct = $bright / $total
                         if ($pct -gt 0.05) {
-                            $script:detectHit++; if ($script:detectHit -ge 3) { $releaseAll = $true }
+                            $script:detectHit++; if ($script:detectHit -ge 3) {
+                                [WinAPI]::SM([WinAPI]::LMU)
+                                $script:st = 1; $script:tk = 0
+                                [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
+                                $txtStatus.Text = "Заброс..."
+                            }
                         } else { $script:detectHit = 0 }
                     } catch {}
                 }
             }
-            if ($script:tk -ge 600) { $releaseAll = $true }
-            if ($releaseAll) {
+            if ($script:tk -ge 600) {
                 [WinAPI]::SM([WinAPI]::LMU)
-                if ($script:rmbPressed) { [WinAPI]::SM([WinAPI]::RMU); $script:rmbPressed = $false }
                 $script:st = 1; $script:tk = 0
                 [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
                 $txtStatus.Text = "Заброс..."

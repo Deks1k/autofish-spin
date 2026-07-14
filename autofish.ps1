@@ -89,7 +89,7 @@ $script:detectTick = 0; $script:detectHit = 0; $script:scanning = $false; $scrip
 $script:refPixels = $null; $script:hasRef = $false
 
 # Mode-specific settings
-$script:bx = 900; $script:by = 1380; $script:bw = 110; $script:bh = 18; $script:bt = 120
+$script:bx = 900; $script:by = 1380; $script:bw = 110; $script:bh = 18; $script:bt = 100
 $script:fx = 850; $script:fy = 1360; $script:fw = 40; $script:fh = 40; $script:ft = 220
 
 $form = New-Object System.Windows.Forms.Form
@@ -204,7 +204,7 @@ $form.Controls.Add($lblThresh)
 
 $numThresh = New-Object System.Windows.Forms.NumericUpDown
 $numThresh.Location = [System.Drawing.Point]::new(280, 253); $numThresh.Size = [System.Drawing.Size]::new(60, 25)
-$numThresh.Minimum = 10; $numThresh.Maximum = 255; $numThresh.Value = 120
+$numThresh.Minimum = 10; $numThresh.Maximum = 255; $numThresh.Value = 100
 $form.Controls.Add($numThresh)
 
 # Save/load settings on mode switch

@@ -85,16 +85,17 @@ public class ScreenCapture {
 
 $script:f = $false; $script:st = 0; $script:tk = 0; $script:wait = 3; $script:reel = 15
 $script:prevF3 = $false; $script:prevF4 = $false; $script:prevF5 = $false; $script:prevF6 = $false
-$script:detectTick = 0; $script:detectHit = 0; $script:scanning = $false; $script:rmbPressed = $false; $script:fishHit = 0; $script:fishBaseline = 0.0; $script:textBaseline = 0.0
+$script:detectTick = 0; $script:detectHit = 0; $script:scanning = $false; $script:rmbPressed = $false; $script:fishHit = 0; $script:winHit = 0; $script:fishBaseline = 0.0; $script:textBaseline = 0.0; $script:winBaseline = 0.0
 $script:refPixels = $null; $script:hasRef = $false
 
 # Mode-specific settings
-$script:bx = 900; $script:by = 1380; $script:bw = 110; $script:bh = 18; $script:bt = 100
-$script:fx = 850; $script:fy = 1360; $script:fw = 40; $script:fh = 40; $script:ft = 220
+$script:bx = 900; $script:by = 1386; $script:bw = 40; $script:bh = 11; $script:bt = 80
+$script:fx = 850; $script:fy = 1360; $script:fw = 40; $script:fh = 40; $script:ft = 150
+$script:wx = 1110; $script:wy = 1260; $script:ww = 80; $script:wh = 25; $script:wt = 80
 
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "AutoFish Spin"
-$form.Size = [System.Drawing.Size]::new(400, 390)
+$form.Size = [System.Drawing.Size]::new(520, 530)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedSingle"
 $form.MaximizeBox = $false
@@ -120,7 +121,7 @@ $form.Controls.Add($numReel)
 $txtStatus = New-Object System.Windows.Forms.TextBox
 $txtStatus.Name = "txtStatus"
 $txtStatus.Text = "Остановлен"
-$txtStatus.Location = [System.Drawing.Point]::new(15, 85); $txtStatus.Size = [System.Drawing.Size]::new(360, 40)
+$txtStatus.Location = [System.Drawing.Point]::new(15, 85); $txtStatus.Size = [System.Drawing.Size]::new(480, 40)
 $txtStatus.ForeColor = [System.Drawing.Color]::Red
 $txtStatus.Font = [System.Drawing.Font]::new("Arial", 9)
 $txtStatus.ReadOnly = $true; $txtStatus.BackColor = [System.Drawing.Color]::White
@@ -139,17 +140,17 @@ $form.Controls.Add($numDX)
 
 $numDY = New-Object System.Windows.Forms.NumericUpDown
 $numDY.Location = [System.Drawing.Point]::new(85, 160); $numDY.Size = [System.Drawing.Size]::new(60, 25)
-$numDY.Minimum = 0; $numDY.Maximum = 2160; $numDY.Value = 1380
+$numDY.Minimum = 0; $numDY.Maximum = 2160; $numDY.Value = 1386
 $form.Controls.Add($numDY)
 
 $numDW = New-Object System.Windows.Forms.NumericUpDown
 $numDW.Location = [System.Drawing.Point]::new(155, 160); $numDW.Size = [System.Drawing.Size]::new(60, 25)
-$numDW.Minimum = 10; $numDW.Maximum = 500; $numDW.Value = 110
+$numDW.Minimum = 5; $numDW.Maximum = 500; $numDW.Value = 40
 $form.Controls.Add($numDW)
 
 $numDH = New-Object System.Windows.Forms.NumericUpDown
 $numDH.Location = [System.Drawing.Point]::new(225, 160); $numDH.Size = [System.Drawing.Size]::new(60, 25)
-$numDH.Minimum = 1; $numDH.Maximum = 100; $numDH.Value = 18
+$numDH.Minimum = 1; $numDH.Maximum = 100; $numDH.Value = 11
 $form.Controls.Add($numDH)
 
 $lblFish = New-Object System.Windows.Forms.Label
@@ -184,27 +185,62 @@ $form.Controls.Add($lblFishThresh)
 
 $numFThresh = New-Object System.Windows.Forms.NumericUpDown
 $numFThresh.Location = [System.Drawing.Point]::new(330, 220); $numFThresh.Size = [System.Drawing.Size]::new(50, 25)
-$numFThresh.Minimum = 10; $numFThresh.Maximum = 255; $numFThresh.Value = 220
+$numFThresh.Minimum = 10; $numFThresh.Maximum = 255; $numFThresh.Value = 150
 $form.Controls.Add($numFThresh)
 
+$lblWin = New-Object System.Windows.Forms.Label
+$lblWin.Text = "Окно рыбы (X,Y,W,H):"
+$lblWin.Location = [System.Drawing.Point]::new(15, 255); $lblWin.Size = [System.Drawing.Size]::new(180, 20)
+$form.Controls.Add($lblWin)
+
+$numWX = New-Object System.Windows.Forms.NumericUpDown
+$numWX.Location = [System.Drawing.Point]::new(15, 280); $numWX.Size = [System.Drawing.Size]::new(60, 25)
+$numWX.Minimum = 0; $numWX.Maximum = 3840; $numWX.Value = 1110
+$form.Controls.Add($numWX)
+
+$numWY = New-Object System.Windows.Forms.NumericUpDown
+$numWY.Location = [System.Drawing.Point]::new(85, 280); $numWY.Size = [System.Drawing.Size]::new(60, 25)
+$numWY.Minimum = 0; $numWY.Maximum = 2160; $numWY.Value = 1260
+$form.Controls.Add($numWY)
+
+$numWW = New-Object System.Windows.Forms.NumericUpDown
+$numWW.Location = [System.Drawing.Point]::new(155, 280); $numWW.Size = [System.Drawing.Size]::new(60, 25)
+$numWW.Minimum = 5; $numWW.Maximum = 500; $numWW.Value = 80
+$form.Controls.Add($numWW)
+
+$numWH = New-Object System.Windows.Forms.NumericUpDown
+$numWH.Location = [System.Drawing.Point]::new(225, 280); $numWH.Size = [System.Drawing.Size]::new(60, 25)
+$numWH.Minimum = 5; $numWH.Maximum = 200; $numWH.Value = 25
+$form.Controls.Add($numWH)
+
+$lblWinThresh = New-Object System.Windows.Forms.Label
+$lblWinThresh.Text = "Порог:"
+$lblWinThresh.Location = [System.Drawing.Point]::new(295, 282); $lblWinThresh.Size = [System.Drawing.Size]::new(40, 20)
+$form.Controls.Add($lblWinThresh)
+
+$numWThresh = New-Object System.Windows.Forms.NumericUpDown
+$numWThresh.Location = [System.Drawing.Point]::new(330, 280); $numWThresh.Size = [System.Drawing.Size]::new(50, 25)
+$numWThresh.Minimum = 10; $numWThresh.Maximum = 255; $numWThresh.Value = 80
+$form.Controls.Add($numWThresh)
+
 $lblMode = New-Object System.Windows.Forms.Label
-$lblMode.Text = "Режим:"; $lblMode.Location = [System.Drawing.Point]::new(15, 255); $lblMode.Size = [System.Drawing.Size]::new(50, 20)
+$lblMode.Text = "Режим:"; $lblMode.Location = [System.Drawing.Point]::new(15, 315); $lblMode.Size = [System.Drawing.Size]::new(50, 20)
 $form.Controls.Add($lblMode)
 
 $cmbMode = New-Object System.Windows.Forms.ComboBox
-$cmbMode.Location = [System.Drawing.Point]::new(65, 253); $cmbMode.Size = [System.Drawing.Size]::new(100, 25)
+$cmbMode.Location = [System.Drawing.Point]::new(65, 313); $cmbMode.Size = [System.Drawing.Size]::new(100, 25)
 $cmbMode.DropDownStyle = "DropDownList"
 $cmbMode.Items.Add("Яркость")|Out-Null; $cmbMode.Items.Add("Эталон")|Out-Null; $cmbMode.Items.Add("Ручной")|Out-Null
 $cmbMode.SelectedIndex = 0
 
 $lblThresh = New-Object System.Windows.Forms.Label
 $lblThresh.Text = "Порог яркости:"
-$lblThresh.Location = [System.Drawing.Point]::new(180, 255); $lblThresh.Size = [System.Drawing.Size]::new(100, 20)
+$lblThresh.Location = [System.Drawing.Point]::new(180, 315); $lblThresh.Size = [System.Drawing.Size]::new(100, 20)
 $form.Controls.Add($lblThresh)
 
 $numThresh = New-Object System.Windows.Forms.NumericUpDown
-$numThresh.Location = [System.Drawing.Point]::new(280, 253); $numThresh.Size = [System.Drawing.Size]::new(60, 25)
-$numThresh.Minimum = 10; $numThresh.Maximum = 255; $numThresh.Value = 100
+$numThresh.Location = [System.Drawing.Point]::new(280, 313); $numThresh.Size = [System.Drawing.Size]::new(60, 25)
+$numThresh.Minimum = 10; $numThresh.Maximum = 255; $numThresh.Value = 80
 $form.Controls.Add($numThresh)
 
 # Save/load settings on mode switch
@@ -215,11 +251,15 @@ $cmbMode.Add_SelectedIndexChanged({
     $script:bt = [int]$numThresh.Value
     $script:fx = [int]$numFX.Value; $script:fy = [int]$numFY.Value
     $script:fw = [int]$numFW.Value; $script:fh = [int]$numFH.Value; $script:ft = [int]$numFThresh.Value
+    $script:wx = [int]$numWX.Value; $script:wy = [int]$numWY.Value
+    $script:ww = [int]$numWW.Value; $script:wh = [int]$numWH.Value; $script:wt = [int]$numWThresh.Value
     $numDX.Value = $script:bx; $numDY.Value = $script:by
     $numDW.Value = $script:bw; $numDH.Value = $script:bh
     $numThresh.Value = $script:bt
     $numFX.Value = $script:fx; $numFY.Value = $script:fy
     $numFW.Value = $script:fw; $numFH.Value = $script:fh; $numFThresh.Value = $script:ft
+    $numWX.Value = $script:wx; $numWY.Value = $script:wy
+    $numWW.Value = $script:ww; $numWH.Value = $script:wh; $numWThresh.Value = $script:wt
     $script:prevMode = $mode
 })
 $form.Controls.Add($cmbMode)
@@ -227,13 +267,13 @@ $script:prevMode = "Яркость"
 
 function StartFish {
     $script:wait = [int]$numWait.Value; $script:reel = [int]$numReel.Value
-    $script:f = $true; $script:st = 1; $script:tk = 0; $script:detectTick = 0; $script:detectHit = 0; $script:rmbPressed = $false; $script:fishHit = 0; $script:fishBaseline = 0.0; $script:textBaseline = 0.0
+    $script:f = $true; $script:st = 1; $script:tk = 0; $script:detectTick = 0; $script:detectHit = 0; $script:rmbPressed = $false; $script:fishHit = 0; $script:winHit = 0; $script:fishBaseline = 0.0; $script:textBaseline = 0.0; $script:winBaseline = 0.0
     $btnStart.Text = "Стоп"
     $txtStatus.Text = "Заброс..."; $txtStatus.ForeColor = "Green"
 }
 
 function StopFish {
-    $script:f = $false; $script:st = 0; $script:tk = 0; $script:rmbPressed = $false; $script:fishHit = 0; $script:fishBaseline = 0.0; $script:textBaseline = 0.0
+    $script:f = $false; $script:st = 0; $script:tk = 0; $script:rmbPressed = $false; $script:fishHit = 0; $script:winHit = 0; $script:fishBaseline = 0.0; $script:textBaseline = 0.0; $script:winBaseline = 0.0
     [WinAPI]::Rel()
     $btnStart.Text = "Старт"; $txtStatus.Text = "Остановлен"; $txtStatus.ForeColor = "Red"
 }
@@ -276,7 +316,17 @@ function Scan {
             $fg.Dispose()
             $fpath = "E:\Project\autofish spin\autofish_fish_scan.png"
             $fbmp.Save($fpath, [System.Drawing.Imaging.ImageFormat]::Png); $fbmp.Dispose()
-            $txtStatus.Text = "Текст: $bright/$total ($pct%). Рыба: $fbright/$ftotal ($fpct%). Файлы сохранены"
+            $wdx = [int]$numWX.Value; $wdy = [int]$numWY.Value; $wdw = [int]$numWW.Value; $wdh = [int]$numWH.Value
+            $wthresh = [int]$numWThresh.Value
+            $wbright = [ScreenCapture]::CountBrightPixels($wdx, $wdy, $wdw, $wdh, $wthresh)
+            $wtotal = $wdw * $wdh; $wpct = [Math]::Round($wbright / $wtotal * 100, 1)
+            $wbmp = New-Object System.Drawing.Bitmap($wdw, $wdh)
+            $wg = [System.Drawing.Graphics]::FromImage($wbmp)
+            $wg.CopyFromScreen($wdx, $wdy, 0, 0, [System.Drawing.Size]::new($wdw, $wdh))
+            $wg.Dispose()
+            $wpath = "E:\Project\autofish spin\autofish_win_scan.png"
+            $wbmp.Save($wpath, [System.Drawing.Imaging.ImageFormat]::Png); $wbmp.Dispose()
+            $txtStatus.Text = "Текст: $bright/$total ($pct%). Рыба: $fbright/$ftotal ($fpct%). Окно: $wbright/$wtotal ($wpct%). Файлы сохранены"
         }
     } catch { $txtStatus.Text = "Oшибка: $_" }
     finally { $script:scanning = $false }
@@ -287,6 +337,8 @@ function Memorize {
     $dw = [int]$numDW.Value; $dh = [int]$numDH.Value
     $fdx = [int]$numFX.Value; $fdy = [int]$numFY.Value
     $fdw = [int]$numFW.Value; $fdh = [int]$numFH.Value
+    $wdx = [int]$numWX.Value; $wdy = [int]$numWY.Value
+    $wdw = [int]$numWW.Value; $wdh = [int]$numWH.Value
     try {
         $script:refPixels = [ScreenCapture]::CaptureLuma($dx, $dy, $dw, $dh)
         $script:hasRef = $true
@@ -302,29 +354,41 @@ function Memorize {
         $fg.Dispose()
         $fbmp.Save("E:\Project\autofish spin\autofish_fish_scan.png", [System.Drawing.Imaging.ImageFormat]::Png)
         $fbmp.Dispose()
-        $txtStatus.Text = "Эталон и скрины сохранены (${dw}x${dh}, ${fdw}x${fdh})"
+        $wbmp = New-Object System.Drawing.Bitmap($wdw, $wdh)
+        $wg = [System.Drawing.Graphics]::FromImage($wbmp)
+        $wg.CopyFromScreen($wdx, $wdy, 0, 0, [System.Drawing.Size]::new($wdw, $wdh))
+        $wg.Dispose()
+        $wbmp.Save("E:\Project\autofish spin\autofish_win_scan.png", [System.Drawing.Imaging.ImageFormat]::Png)
+        $wbmp.Dispose()
+        $txtStatus.Text = "Эталон и скрины сохранены (${dw}x${dh}, ${fdw}x${fdh}, ${wdw}x${wdh})"
     } catch { $txtStatus.Text = "Ошибка: $_" }
 }
 
 $btnRef = New-Object System.Windows.Forms.Button
-$btnRef.Text = "Запомнить(F5)"; $btnRef.Location = [System.Drawing.Point]::new(15, 290); $btnRef.Size = [System.Drawing.Size]::new(120, 25)
+$btnRef.Text = "Запомнить(F5)"; $btnRef.Location = [System.Drawing.Point]::new(15, 350); $btnRef.Size = [System.Drawing.Size]::new(120, 25)
 $btnRef.Add_Click({ Memorize })
 $form.Controls.Add($btnRef)
 
 $btnScan = New-Object System.Windows.Forms.Button
-$btnScan.Text = "Скан(F6)"; $btnScan.Location = [System.Drawing.Point]::new(145, 290); $btnScan.Size = [System.Drawing.Size]::new(120, 25)
+$btnScan.Text = "Скан(F6)"; $btnScan.Location = [System.Drawing.Point]::new(145, 350); $btnScan.Size = [System.Drawing.Size]::new(120, 25)
 $btnScan.Add_Click({ Scan })
 $form.Controls.Add($btnScan)
 
 $btnStart = New-Object System.Windows.Forms.Button
-$btnStart.Text = "Старт"; $btnStart.Location = [System.Drawing.Point]::new(60, 325); $btnStart.Size = [System.Drawing.Size]::new(80, 30)
+$btnStart.Text = "Старт"; $btnStart.Location = [System.Drawing.Point]::new(60, 385); $btnStart.Size = [System.Drawing.Size]::new(80, 30)
 $btnStart.Add_Click({ if ($script:f) { StopFish } else { StartFish } })
 $form.Controls.Add($btnStart)
 
 $btnExit = New-Object System.Windows.Forms.Button
-$btnExit.Text = "Выход"; $btnExit.Location = [System.Drawing.Point]::new(170, 325); $btnExit.Size = [System.Drawing.Size]::new(80, 30)
+$btnExit.Text = "Выход"; $btnExit.Location = [System.Drawing.Point]::new(170, 385); $btnExit.Size = [System.Drawing.Size]::new(80, 30)
 $btnExit.Add_Click({ $form.Close() })
 $form.Controls.Add($btnExit)
+
+$lblHelp = New-Object System.Windows.Forms.Label
+$lblHelp.Text = "X:-влево/+вправо Y:-вверх/+вниз W:-уже/+шире H:-ниже/+выше | F5=запом F6=скан F3=пуск F4=стоп"
+$lblHelp.Location = [System.Drawing.Point]::new(15, 425); $lblHelp.Size = [System.Drawing.Size]::new(480, 20)
+$lblHelp.ForeColor = [System.Drawing.Color]::Gray
+$form.Controls.Add($lblHelp)
 
 $tm = New-Object System.Windows.Forms.Timer
 $tm.Interval = 100
@@ -340,12 +404,9 @@ $tm.Add_Tick({
 
     if ($script:st -eq 1) {
         if ($script:tk -eq 0) {
-            try {
-                $baseBright = [ScreenCapture]::CountBrightPixels([int]$numFX.Value, [int]$numFY.Value, [int]$numFW.Value, [int]$numFH.Value, [int]$numFThresh.Value)
-                $script:fishBaseline = $baseBright / ([int]$numFW.Value * [int]$numFH.Value)
-                $baseText = [ScreenCapture]::CountBrightPixels([int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, [int]$numThresh.Value)
-                $script:textBaseline = $baseText / ([int]$numDW.Value * [int]$numDH.Value)
-            } catch { $script:fishBaseline = 0.0; $script:textBaseline = 0.0 }
+            try { $baseBright = [ScreenCapture]::CountBrightPixels([int]$numFX.Value, [int]$numFY.Value, [int]$numFW.Value, [int]$numFH.Value, [int]$numFThresh.Value); $script:fishBaseline = $baseBright / ([int]$numFW.Value * [int]$numFH.Value) } catch { $script:fishBaseline = 0.0 }
+            try { $baseText = [ScreenCapture]::CountBrightPixels([int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, [int]$numThresh.Value); $script:textBaseline = $baseText / ([int]$numDW.Value * [int]$numDH.Value) } catch { $script:textBaseline = 0.0 }
+            try { $baseWin = [ScreenCapture]::CountBrightPixels([int]$numWX.Value, [int]$numWY.Value, [int]$numWW.Value, [int]$numWH.Value, [int]$numWThresh.Value); $script:winBaseline = $baseWin / ([int]$numWW.Value * [int]$numWH.Value) } catch { $script:winBaseline = 0.0 }
             [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
         }
         $script:tk++
@@ -356,7 +417,7 @@ $tm.Add_Tick({
     } elseif ($script:st -eq 2) {
         $script:tk++
         if ($script:tk -ge ($script:wait * 10)) {
-            $script:st = 3; $script:tk = 0; $script:detectTick = 0; $script:detectHit = 0; $script:rmbPressed = $false; $script:fishHit = 0
+            $script:st = 3; $script:tk = 0; $script:detectTick = 0; $script:detectHit = 0; $script:rmbPressed = $false; $script:fishHit = 0; $script:winHit = 0
             [WinAPI]::SM([WinAPI]::LMD)
             $txtStatus.Text = "Мотка..."
         }
@@ -384,8 +445,8 @@ $tm.Add_Tick({
                     } else {
                         $bright = [ScreenCapture]::CountBrightPixels([int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, [int]$numThresh.Value)
                         $total = [int]$numDW.Value * [int]$numDH.Value; $pct = $bright / $total
-                        if ($pct -gt ($script:textBaseline + 0.08) -and $pct -gt ($script:textBaseline * 1.5)) {
-                            $script:detectHit++; if ($script:detectHit -ge 5) { $releaseAll = $true }
+                        if ($pct -gt ($script:textBaseline * 1.5)) {
+                            $script:detectHit++; if ($script:detectHit -ge 3) { $releaseAll = $true }
                         } else { $script:detectHit = 0 }
                     }
 
@@ -400,16 +461,48 @@ $tm.Add_Tick({
                             }
                         } else { $script:fishHit = 0 }
                     }
+
+                    # Window detection — only after bite
+                    if ($script:rmbPressed) {
+                        $wbright = [ScreenCapture]::CountBrightPixels([int]$numWX.Value, [int]$numWY.Value, [int]$numWW.Value, [int]$numWH.Value, [int]$numWThresh.Value)
+                        $wtotal = [int]$numWW.Value * [int]$numWH.Value; $wpct = $wbright / $wtotal
+                        if ($wpct -gt ($script:winBaseline + 0.10) -and $wpct -gt ($script:winBaseline * 1.5)) {
+                            $script:winHit++; if ($script:winHit -ge 8) {
+                                [WinAPI]::SM([WinAPI]::LMU)
+                                [WinAPI]::SM([WinAPI]::RMU); $script:rmbPressed = $false
+                                [WinAPI]::SK(0x10, 2); [WinAPI]::SK(0x20, 0); Start-Sleep -Milliseconds 50; [WinAPI]::SK(0x20, 2)
+                                $script:st = 4; $script:tk = 0; $script:detectTick = 0; $script:detectHit = 0
+                                $txtStatus.Text = "Рыба поймана! Ожидание оснастки..."
+                            }
+                        } else { $script:winHit = 0 }
+                    }
                 } catch {}
             }
             if ($script:tk -ge 600) { $releaseAll = $true }
-            if ($releaseAll) {
+            if ($releaseAll -and $script:st -eq 3) {
                 [WinAPI]::SM([WinAPI]::LMU)
                 if ($script:rmbPressed) { [WinAPI]::SM([WinAPI]::RMU); $script:rmbPressed = $false }
                 $script:st = 1; $script:tk = 0
                 [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
                 $txtStatus.Text = "Заброс..."
             }
+        }
+    } elseif ($script:st -eq 4) {
+        $script:tk++; $script:detectTick++
+        if ($script:tk -ge 300) { $script:st = 1; $script:tk = 0; [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD); $txtStatus.Text = "Заброс..." }
+        if ($script:detectTick -ge 5) {
+            $script:detectTick = 0
+            try {
+                $bright = [ScreenCapture]::CountBrightPixels([int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, [int]$numThresh.Value)
+                $total = [int]$numDW.Value * [int]$numDH.Value; $pct = $bright / $total
+                if ($pct -gt ($script:textBaseline * 1.5)) {
+                    $script:detectHit++; if ($script:detectHit -ge 3) {
+                        $script:st = 1; $script:tk = 0
+                        [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
+                        $txtStatus.Text = "Заброс..."
+                    }
+                } else { $script:detectHit = 0 }
+            } catch { $script:detectHit = 0 }
         }
     }
 })

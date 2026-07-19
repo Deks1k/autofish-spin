@@ -284,7 +284,7 @@ $form.Controls.Add($lblFishDetect)
 
 $numFishOffset = New-Object System.Windows.Forms.NumericUpDown
 $numFishOffset.Location = [System.Drawing.Point]::new(15, 400); $numFishOffset.Size = [System.Drawing.Size]::new(60, 25)
-$numFishOffset.Minimum = 0; $numFishOffset.Maximum = 100; $numFishOffset.Value = 8
+$numFishOffset.Minimum = 0; $numFishOffset.Maximum = 100; $numFishOffset.Value = 15
 $numFishOffset.DecimalPlaces = 2; $numFishOffset.Increment = 1
 $form.Controls.Add($numFishOffset)
 
@@ -295,7 +295,7 @@ $form.Controls.Add($lblMult)
 
 $numFishMult = New-Object System.Windows.Forms.NumericUpDown
 $numFishMult.Location = [System.Drawing.Point]::new(155, 400); $numFishMult.Size = [System.Drawing.Size]::new(60, 25)
-$numFishMult.Minimum = 10; $numFishMult.Maximum = 500; $numFishMult.Value = 130
+$numFishMult.Minimum = 10; $numFishMult.Maximum = 500; $numFishMult.Value = 210
 $numFishMult.DecimalPlaces = 1; $numFishMult.Increment = 10
 $form.Controls.Add($numFishMult)
 

@@ -95,7 +95,7 @@ $script:wx = 1110; $script:wy = 1260; $script:ww = 80; $script:wh = 25; $script:
 
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "AutoFish Spin"
-$form.Size = [System.Drawing.Size]::new(520, 530)
+$form.Size = [System.Drawing.Size]::new(520, 560)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedSingle"
 $form.MaximizeBox = $false
@@ -265,9 +265,21 @@ $cmbMode.Add_SelectedIndexChanged({
 $form.Controls.Add($cmbMode)
 $script:prevMode = "Яркость"
 
+$lblFishingType = New-Object System.Windows.Forms.Label
+$lblFishingType.Text = "Тип ловли:"; $lblFishingType.Location = [System.Drawing.Point]::new(15, 348); $lblFishingType.Size = [System.Drawing.Size]::new(80, 25)
+$form.Controls.Add($lblFishingType)
+
+$cmbFishingType = New-Object System.Windows.Forms.ComboBox
+$cmbFishingType.Location = [System.Drawing.Point]::new(95, 346); $cmbFishingType.Size = [System.Drawing.Size]::new(120, 25)
+$cmbFishingType.DropDownStyle = "DropDownList"
+$cmbFishingType.Items.Add("Спининг")|Out-Null; $cmbFishingType.Items.Add("Авто пилкинг")|Out-Null
+$cmbFishingType.SelectedIndex = 0
+$form.Controls.Add($cmbFishingType)
+
 function StartFish {
     $script:wait = [int]$numWait.Value; $script:reel = [int]$numReel.Value
-    $script:f = $true; $script:st = 1; $script:tk = 0; $script:detectTick = 0; $script:detectHit = 0; $script:rmbPressed = $false; $script:fishHit = 0; $script:winHit = 0; $script:fishBaseline = 0.0; $script:textBaseline = 0.0; $script:winBaseline = 0.0
+    $script:f = $true; $script:tk = 0; $script:detectTick = 0; $script:detectHit = 0; $script:rmbPressed = $false; $script:fishHit = 0; $script:winHit = 0; $script:fishBaseline = 0.0; $script:textBaseline = 0.0; $script:winBaseline = 0.0
+    if ($cmbFishingType.SelectedItem -eq "Авто пилкинг") { $script:st = 10 } else { $script:st = 1 }
     $btnStart.Text = "Стоп"
     $txtStatus.Text = "Заброс..."; $txtStatus.ForeColor = "Green"
 }
@@ -365,28 +377,28 @@ function Memorize {
 }
 
 $btnRef = New-Object System.Windows.Forms.Button
-$btnRef.Text = "Запомнить(F5)"; $btnRef.Location = [System.Drawing.Point]::new(15, 350); $btnRef.Size = [System.Drawing.Size]::new(120, 25)
+$btnRef.Text = "Запомнить(F5)"; $btnRef.Location = [System.Drawing.Point]::new(15, 385); $btnRef.Size = [System.Drawing.Size]::new(120, 25)
 $btnRef.Add_Click({ Memorize })
 $form.Controls.Add($btnRef)
 
 $btnScan = New-Object System.Windows.Forms.Button
-$btnScan.Text = "Скан(F6)"; $btnScan.Location = [System.Drawing.Point]::new(145, 350); $btnScan.Size = [System.Drawing.Size]::new(120, 25)
+$btnScan.Text = "Скан(F6)"; $btnScan.Location = [System.Drawing.Point]::new(145, 385); $btnScan.Size = [System.Drawing.Size]::new(120, 25)
 $btnScan.Add_Click({ Scan })
 $form.Controls.Add($btnScan)
 
 $btnStart = New-Object System.Windows.Forms.Button
-$btnStart.Text = "Старт"; $btnStart.Location = [System.Drawing.Point]::new(60, 385); $btnStart.Size = [System.Drawing.Size]::new(80, 30)
+$btnStart.Text = "Старт"; $btnStart.Location = [System.Drawing.Point]::new(60, 420); $btnStart.Size = [System.Drawing.Size]::new(80, 30)
 $btnStart.Add_Click({ if ($script:f) { StopFish } else { StartFish } })
 $form.Controls.Add($btnStart)
 
 $btnExit = New-Object System.Windows.Forms.Button
-$btnExit.Text = "Выход"; $btnExit.Location = [System.Drawing.Point]::new(170, 385); $btnExit.Size = [System.Drawing.Size]::new(80, 30)
+$btnExit.Text = "Выход"; $btnExit.Location = [System.Drawing.Point]::new(170, 420); $btnExit.Size = [System.Drawing.Size]::new(80, 30)
 $btnExit.Add_Click({ $form.Close() })
 $form.Controls.Add($btnExit)
 
 $lblHelp = New-Object System.Windows.Forms.Label
 $lblHelp.Text = "X:-влево/+вправо Y:-вверх/+вниз W:-уже/+шире H:-ниже/+выше | F5=запом F6=скан F3=пуск F4=стоп"
-$lblHelp.Location = [System.Drawing.Point]::new(15, 425); $lblHelp.Size = [System.Drawing.Size]::new(480, 20)
+$lblHelp.Location = [System.Drawing.Point]::new(15, 465); $lblHelp.Size = [System.Drawing.Size]::new(480, 20)
 $lblHelp.ForeColor = [System.Drawing.Color]::Gray
 $form.Controls.Add($lblHelp)
 
@@ -402,107 +414,136 @@ $tm.Add_Tick({
     $script:prevF3 = $f3; $script:prevF4 = $f4; $script:prevF5 = $f5; $script:prevF6 = $f6
     if (-not $script:f) { return }
 
-    if ($script:st -eq 1) {
-        if ($script:tk -eq 0) {
-            try { $baseBright = [ScreenCapture]::CountBrightPixels([int]$numFX.Value, [int]$numFY.Value, [int]$numFW.Value, [int]$numFH.Value, [int]$numFThresh.Value); $script:fishBaseline = $baseBright / ([int]$numFW.Value * [int]$numFH.Value) } catch { $script:fishBaseline = 0.0 }
-            try { $baseText = [ScreenCapture]::CountBrightPixels([int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, [int]$numThresh.Value); $script:textBaseline = $baseText / ([int]$numDW.Value * [int]$numDH.Value) } catch { $script:textBaseline = 0.0 }
-            try { $baseWin = [ScreenCapture]::CountBrightPixels([int]$numWX.Value, [int]$numWY.Value, [int]$numWW.Value, [int]$numWH.Value, [int]$numWThresh.Value); $script:winBaseline = $baseWin / ([int]$numWW.Value * [int]$numWH.Value) } catch { $script:winBaseline = 0.0 }
-            [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
-        }
-        $script:tk++
-        if ($script:tk -ge 10) {
-            [WinAPI]::SK(0x10, 2); [WinAPI]::SM([WinAPI]::LMU)
-            $script:st = 2; $script:tk = 0; $txtStatus.Text = "Ожидание $($script:wait)с..."
-        }
-    } elseif ($script:st -eq 2) {
-        $script:tk++
-        if ($script:tk -ge ($script:wait * 10)) {
-            $script:st = 3; $script:tk = 0; $script:detectTick = 0; $script:detectHit = 0; $script:rmbPressed = $false; $script:fishHit = 0; $script:winHit = 0
-            [WinAPI]::SM([WinAPI]::LMD)
-            $txtStatus.Text = "Мотка..."
-        }
-    } elseif ($script:st -eq 3) {
-        $script:tk++
-        $mode = $cmbMode.SelectedItem
-        if ($mode -eq "Ручной") {
-            if ($script:tk -ge ($script:reel * 10)) {
-                [WinAPI]::SM([WinAPI]::LMU)
-                $script:st = 1; $script:tk = 0
+    if ($cmbFishingType.SelectedItem -eq "Спининг") {
+        if ($script:st -eq 1) {
+            if ($script:tk -eq 0) {
+                try { $baseBright = [ScreenCapture]::CountBrightPixels([int]$numFX.Value, [int]$numFY.Value, [int]$numFW.Value, [int]$numFH.Value, [int]$numFThresh.Value); $script:fishBaseline = $baseBright / ([int]$numFW.Value * [int]$numFH.Value) } catch { $script:fishBaseline = 0.0 }
+                try { $baseText = [ScreenCapture]::CountBrightPixels([int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, [int]$numThresh.Value); $script:textBaseline = $baseText / ([int]$numDW.Value * [int]$numDH.Value) } catch { $script:textBaseline = 0.0 }
+                try { $baseWin = [ScreenCapture]::CountBrightPixels([int]$numWX.Value, [int]$numWY.Value, [int]$numWW.Value, [int]$numWH.Value, [int]$numWThresh.Value); $script:winBaseline = $baseWin / ([int]$numWW.Value * [int]$numWH.Value) } catch { $script:winBaseline = 0.0 }
                 [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
-                $txtStatus.Text = "Заброс..."
             }
-        } else {
-            $script:detectTick++; $releaseAll = $false
+            $script:tk++
+            if ($script:tk -ge 10) {
+                [WinAPI]::SK(0x10, 2); [WinAPI]::SM([WinAPI]::LMU)
+                $script:st = 2; $script:tk = 0; $txtStatus.Text = "Ожидание $($script:wait)с..."
+            }
+        } elseif ($script:st -eq 2) {
+            $script:tk++
+            if ($script:tk -ge ($script:wait * 10)) {
+                $script:st = 3; $script:tk = 0; $script:detectTick = 0; $script:detectHit = 0; $script:rmbPressed = $false; $script:fishHit = 0; $script:winHit = 0
+                [WinAPI]::SM([WinAPI]::LMD)
+                $txtStatus.Text = "Мотка..."
+            }
+        } elseif ($script:st -eq 3) {
+            $script:tk++
+            $mode = $cmbMode.SelectedItem
+            if ($mode -eq "Ручной") {
+                if ($script:tk -ge ($script:reel * 10)) {
+                    [WinAPI]::SM([WinAPI]::LMU)
+                    $script:st = 1; $script:tk = 0
+                    [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
+                    $txtStatus.Text = "Заброс..."
+                }
+            } else {
+                $script:detectTick++; $releaseAll = $false
+                if ($script:detectTick -ge 5) {
+                    $script:detectTick = 0
+                    try {
+                        # Text detection
+                        if ($mode -eq "Эталон" -and $script:hasRef) {
+                            $match = [ScreenCapture]::MatchLuma($script:refPixels, [int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, 30)
+                            if ($match -gt 0.85) {
+                                $script:detectHit++; if ($script:detectHit -ge 3) { $releaseAll = $true }
+                            } else { $script:detectHit = 0 }
+                        } else {
+                            $bright = [ScreenCapture]::CountBrightPixels([int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, [int]$numThresh.Value)
+                            $total = [int]$numDW.Value * [int]$numDH.Value; $pct = $bright / $total
+                            if ($pct -gt ($script:textBaseline * 1.5)) {
+                                $script:detectHit++; if ($script:detectHit -ge 3) { $releaseAll = $true }
+                            } else { $script:detectHit = 0 }
+                        }
+
+                        # Fish detection — only until подсечка
+                        if (-not $script:rmbPressed) {
+                            $fbright = [ScreenCapture]::CountBrightPixels([int]$numFX.Value, [int]$numFY.Value, [int]$numFW.Value, [int]$numFH.Value, [int]$numFThresh.Value)
+                            $ftotal = [int]$numFW.Value * [int]$numFH.Value; $fpct = $fbright / $ftotal
+                            if ($fpct -gt ($script:fishBaseline + 0.15) -and $fpct -gt ($script:fishBaseline * 2.0) -and $fpct -lt 0.80) {
+                                $script:fishHit++; if ($script:fishHit -ge 6) {
+                                    [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::RMD); $script:rmbPressed = $true
+                                    $txtStatus.Text = "Поклёвка! Мотка+Шифт+ПКМ..."
+                                }
+                            } else { $script:fishHit = 0 }
+                        }
+
+                        # Window detection — only after bite
+                        if ($script:rmbPressed) {
+                            $wbright = [ScreenCapture]::CountBrightPixels([int]$numWX.Value, [int]$numWY.Value, [int]$numWW.Value, [int]$numWH.Value, [int]$numWThresh.Value)
+                            $wtotal = [int]$numWW.Value * [int]$numWH.Value; $wpct = $wbright / $wtotal
+                            if ($wpct -gt ($script:winBaseline + 0.10) -and $wpct -gt ($script:winBaseline * 1.5)) {
+                                $script:winHit++; if ($script:winHit -ge 8) {
+                                    [WinAPI]::SM([WinAPI]::LMU)
+                                    [WinAPI]::SM([WinAPI]::RMU); $script:rmbPressed = $false
+                                    [WinAPI]::SK(0x10, 2); [WinAPI]::SK(0x20, 0); Start-Sleep -Milliseconds 50; [WinAPI]::SK(0x20, 2)
+                                    $script:st = 4; $script:tk = 0; $script:detectTick = 0; $script:detectHit = 0
+                                    $txtStatus.Text = "Рыба поймана! Ожидание оснастки..."
+                                }
+                            } else { $script:winHit = 0 }
+                        }
+                    } catch {}
+                }
+                if ($script:tk -ge 600) { $releaseAll = $true }
+                if ($releaseAll -and $script:st -eq 3) {
+                    [WinAPI]::SM([WinAPI]::LMU)
+                    if ($script:rmbPressed) { [WinAPI]::SM([WinAPI]::RMU); $script:rmbPressed = $false }
+                    $script:st = 1; $script:tk = 0
+                    [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
+                    $txtStatus.Text = "Заброс..."
+                }
+            }
+        } elseif ($script:st -eq 4) {
+            $script:tk++; $script:detectTick++
+            if ($script:tk -ge 300) { $script:st = 1; $script:tk = 0; [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD); $txtStatus.Text = "Заброс..." }
             if ($script:detectTick -ge 5) {
                 $script:detectTick = 0
                 try {
-                    # Text detection
-                    if ($mode -eq "Эталон" -and $script:hasRef) {
-                        $match = [ScreenCapture]::MatchLuma($script:refPixels, [int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, 30)
-                        if ($match -gt 0.85) {
-                            $script:detectHit++; if ($script:detectHit -ge 3) { $releaseAll = $true }
-                        } else { $script:detectHit = 0 }
-                    } else {
-                        $bright = [ScreenCapture]::CountBrightPixels([int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, [int]$numThresh.Value)
-                        $total = [int]$numDW.Value * [int]$numDH.Value; $pct = $bright / $total
-                        if ($pct -gt ($script:textBaseline * 1.5)) {
-                            $script:detectHit++; if ($script:detectHit -ge 3) { $releaseAll = $true }
-                        } else { $script:detectHit = 0 }
-                    }
-
-                    # Fish detection — only until подсечка
-                    if (-not $script:rmbPressed) {
-                        $fbright = [ScreenCapture]::CountBrightPixels([int]$numFX.Value, [int]$numFY.Value, [int]$numFW.Value, [int]$numFH.Value, [int]$numFThresh.Value)
-                        $ftotal = [int]$numFW.Value * [int]$numFH.Value; $fpct = $fbright / $ftotal
-                        if ($fpct -gt ($script:fishBaseline + 0.15) -and $fpct -gt ($script:fishBaseline * 2.0) -and $fpct -lt 0.80) {
-                            $script:fishHit++; if ($script:fishHit -ge 6) {
-                                [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::RMD); $script:rmbPressed = $true
-                                $txtStatus.Text = "Поклёвка! Мотка+Шифт+ПКМ..."
-                            }
-                        } else { $script:fishHit = 0 }
-                    }
-
-                    # Window detection — only after bite
-                    if ($script:rmbPressed) {
-                        $wbright = [ScreenCapture]::CountBrightPixels([int]$numWX.Value, [int]$numWY.Value, [int]$numWW.Value, [int]$numWH.Value, [int]$numWThresh.Value)
-                        $wtotal = [int]$numWW.Value * [int]$numWH.Value; $wpct = $wbright / $wtotal
-                        if ($wpct -gt ($script:winBaseline + 0.10) -and $wpct -gt ($script:winBaseline * 1.5)) {
-                            $script:winHit++; if ($script:winHit -ge 8) {
-                                [WinAPI]::SM([WinAPI]::LMU)
-                                [WinAPI]::SM([WinAPI]::RMU); $script:rmbPressed = $false
-                                [WinAPI]::SK(0x10, 2); [WinAPI]::SK(0x20, 0); Start-Sleep -Milliseconds 50; [WinAPI]::SK(0x20, 2)
-                                $script:st = 4; $script:tk = 0; $script:detectTick = 0; $script:detectHit = 0
-                                $txtStatus.Text = "Рыба поймана! Ожидание оснастки..."
-                            }
-                        } else { $script:winHit = 0 }
-                    }
-                } catch {}
-            }
-            if ($script:tk -ge 600) { $releaseAll = $true }
-            if ($releaseAll -and $script:st -eq 3) {
-                [WinAPI]::SM([WinAPI]::LMU)
-                if ($script:rmbPressed) { [WinAPI]::SM([WinAPI]::RMU); $script:rmbPressed = $false }
-                $script:st = 1; $script:tk = 0
-                [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
-                $txtStatus.Text = "Заброс..."
+                    $bright = [ScreenCapture]::CountBrightPixels([int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, [int]$numThresh.Value)
+                    $total = [int]$numDW.Value * [int]$numDH.Value; $pct = $bright / $total
+                    if ($pct -gt ($script:textBaseline * 1.5)) {
+                        $script:detectHit++; if ($script:detectHit -ge 3) {
+                            $script:st = 1; $script:tk = 0
+                            [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
+                            $txtStatus.Text = "Заброс..."
+                        }
+                    } else { $script:detectHit = 0 }
+                } catch { $script:detectHit = 0 }
             }
         }
-    } elseif ($script:st -eq 4) {
-        $script:tk++; $script:detectTick++
-        if ($script:tk -ge 300) { $script:st = 1; $script:tk = 0; [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD); $txtStatus.Text = "Заброс..." }
-        if ($script:detectTick -ge 5) {
-            $script:detectTick = 0
+    } else {
+        # Авто пилкинг: ПКМ 0.6с / пауза 1с (цикл) + детекция рыбы
+        if ($script:st -eq 10) {
+            $script:tk++
+            if ($script:tk -eq 1) {
+                try { $baseBright = [ScreenCapture]::CountBrightPixels([int]$numFX.Value, [int]$numFY.Value, [int]$numFW.Value, [int]$numFH.Value, [int]$numFThresh.Value); $script:fishBaseline = $baseBright / ([int]$numFW.Value * [int]$numFH.Value) } catch { $script:fishBaseline = 0.0 }
+                [WinAPI]::SM([WinAPI]::RMD)
+                $txtStatus.Text = "Авто пилкинг..."
+            } elseif ($script:tk -eq 6) {
+                [WinAPI]::SM([WinAPI]::RMU)
+            } elseif ($script:tk -ge 16) {
+                $script:tk = 0
+            }
+
             try {
-                $bright = [ScreenCapture]::CountBrightPixels([int]$numDX.Value, [int]$numDY.Value, [int]$numDW.Value, [int]$numDH.Value, [int]$numThresh.Value)
-                $total = [int]$numDW.Value * [int]$numDH.Value; $pct = $bright / $total
-                if ($pct -gt ($script:textBaseline * 1.5)) {
-                    $script:detectHit++; if ($script:detectHit -ge 3) {
-                        $script:st = 1; $script:tk = 0
-                        [WinAPI]::SK(0x10, 0); [WinAPI]::SM([WinAPI]::LMD)
-                        $txtStatus.Text = "Заброс..."
+                $fbright = [ScreenCapture]::CountBrightPixels([int]$numFX.Value, [int]$numFY.Value, [int]$numFW.Value, [int]$numFH.Value, [int]$numFThresh.Value)
+                $ftotal = [int]$numFW.Value * [int]$numFH.Value; $fpct = $fbright / $ftotal
+                if ($fpct -gt ($script:fishBaseline + 0.15) -and $fpct -gt ($script:fishBaseline * 2.0) -and $fpct -lt 0.80) {
+                    $script:fishHit++
+                    if ($script:fishHit -ge 6) {
+                        $script:fishHit = 0
+                        [System.Media.SystemSounds]::Exclamation.Play()
+                        $txtStatus.Text = "Поклёвка! Авто пилкинг..."
                     }
-                } else { $script:detectHit = 0 }
-            } catch { $script:detectHit = 0 }
+                } else { $script:fishHit = 0 }
+            } catch {}
         }
     }
 })

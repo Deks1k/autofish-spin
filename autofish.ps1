@@ -86,16 +86,17 @@ public class ScreenCapture {
 $script:f = $false; $script:st = 0; $script:tk = 0; $script:wait = 3; $script:reel = 15
 $script:prevF3 = $false; $script:prevF4 = $false; $script:prevF5 = $false; $script:prevF6 = $false
 $script:detectTick = 0; $script:detectHit = 0; $script:scanning = $false; $script:rmbPressed = $false; $script:fishHit = 0; $script:winHit = 0; $script:fishBaseline = 0.0; $script:textBaseline = 0.0; $script:winBaseline = 0.0
+$script:alertCooldown = 0
 $script:refPixels = $null; $script:hasRef = $false
 
 # Mode-specific settings
 $script:bx = 900; $script:by = 1386; $script:bw = 40; $script:bh = 11; $script:bt = 80
-$script:fx = 850; $script:fy = 1360; $script:fw = 40; $script:fh = 40; $script:ft = 150
+$script:fx = 852; $script:fy = 1365; $script:fw = 36; $script:fh = 38; $script:ft = 150
 $script:wx = 1110; $script:wy = 1260; $script:ww = 80; $script:wh = 25; $script:wt = 80
 
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "AutoFish Spin"
-$form.Size = [System.Drawing.Size]::new(520, 560)
+$form.Size = [System.Drawing.Size]::new(520, 590)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedSingle"
 $form.MaximizeBox = $false
@@ -160,22 +161,22 @@ $form.Controls.Add($lblFish)
 
 $numFX = New-Object System.Windows.Forms.NumericUpDown
 $numFX.Location = [System.Drawing.Point]::new(15, 220); $numFX.Size = [System.Drawing.Size]::new(60, 25)
-$numFX.Minimum = 0; $numFX.Maximum = 3840; $numFX.Value = 850
+$numFX.Minimum = 0; $numFX.Maximum = 3840; $numFX.Value = 852
 $form.Controls.Add($numFX)
 
 $numFY = New-Object System.Windows.Forms.NumericUpDown
 $numFY.Location = [System.Drawing.Point]::new(85, 220); $numFY.Size = [System.Drawing.Size]::new(60, 25)
-$numFY.Minimum = 0; $numFY.Maximum = 2160; $numFY.Value = 1360
+$numFY.Minimum = 0; $numFY.Maximum = 2160; $numFY.Value = 1365
 $form.Controls.Add($numFY)
 
 $numFW = New-Object System.Windows.Forms.NumericUpDown
 $numFW.Location = [System.Drawing.Point]::new(155, 220); $numFW.Size = [System.Drawing.Size]::new(60, 25)
-$numFW.Minimum = 5; $numFW.Maximum = 200; $numFW.Value = 40
+$numFW.Minimum = 5; $numFW.Maximum = 200; $numFW.Value = 36
 $form.Controls.Add($numFW)
 
 $numFH = New-Object System.Windows.Forms.NumericUpDown
 $numFH.Location = [System.Drawing.Point]::new(225, 220); $numFH.Size = [System.Drawing.Size]::new(60, 25)
-$numFH.Minimum = 5; $numFH.Maximum = 200; $numFH.Value = 40
+$numFH.Minimum = 5; $numFH.Maximum = 200; $numFH.Value = 38
 $form.Controls.Add($numFH)
 
 $lblFishThresh = New-Object System.Windows.Forms.Label
@@ -276,10 +277,35 @@ $cmbFishingType.Items.Add("Спининг")|Out-Null; $cmbFishingType.Items.Add(
 $cmbFishingType.SelectedIndex = 0
 $form.Controls.Add($cmbFishingType)
 
+$lblFishDetect = New-Object System.Windows.Forms.Label
+$lblFishDetect.Text = "Порог рыбки (+/-):"
+$lblFishDetect.Location = [System.Drawing.Point]::new(15, 378); $lblFishDetect.Size = [System.Drawing.Size]::new(120, 20)
+$form.Controls.Add($lblFishDetect)
+
+$numFishOffset = New-Object System.Windows.Forms.NumericUpDown
+$numFishOffset.Location = [System.Drawing.Point]::new(15, 400); $numFishOffset.Size = [System.Drawing.Size]::new(60, 25)
+$numFishOffset.Minimum = 0; $numFishOffset.Maximum = 100; $numFishOffset.Value = 8
+$numFishOffset.DecimalPlaces = 2; $numFishOffset.Increment = 1
+$form.Controls.Add($numFishOffset)
+
+$lblMult = New-Object System.Windows.Forms.Label
+$lblMult.Text = "Множитель:"
+$lblMult.Location = [System.Drawing.Point]::new(85, 402); $lblMult.Size = [System.Drawing.Size]::new(70, 20)
+$form.Controls.Add($lblMult)
+
+$numFishMult = New-Object System.Windows.Forms.NumericUpDown
+$numFishMult.Location = [System.Drawing.Point]::new(155, 400); $numFishMult.Size = [System.Drawing.Size]::new(60, 25)
+$numFishMult.Minimum = 10; $numFishMult.Maximum = 500; $numFishMult.Value = 130
+$numFishMult.DecimalPlaces = 1; $numFishMult.Increment = 10
+$form.Controls.Add($numFishMult)
+
 function StartFish {
     $script:wait = [int]$numWait.Value; $script:reel = [int]$numReel.Value
     $script:f = $true; $script:tk = 0; $script:detectTick = 0; $script:detectHit = 0; $script:rmbPressed = $false; $script:fishHit = 0; $script:winHit = 0; $script:fishBaseline = 0.0; $script:textBaseline = 0.0; $script:winBaseline = 0.0
-    if ($cmbFishingType.SelectedItem -eq "Авто пилкинг") { $script:st = 10 } else { $script:st = 1 }
+    if ($cmbFishingType.SelectedItem -eq "Авто пилкинг") {
+        $script:st = 10
+        try { $baseBright = [ScreenCapture]::CountBrightPixels([int]$numFX.Value, [int]$numFY.Value, [int]$numFW.Value, [int]$numFH.Value, [int]$numFThresh.Value); $script:fishBaseline = $baseBright / ([int]$numFW.Value * [int]$numFH.Value) } catch { $script:fishBaseline = 0.0 }
+    } else { $script:st = 1 }
     $btnStart.Text = "Стоп"
     $txtStatus.Text = "Заброс..."; $txtStatus.ForeColor = "Green"
 }
@@ -377,28 +403,28 @@ function Memorize {
 }
 
 $btnRef = New-Object System.Windows.Forms.Button
-$btnRef.Text = "Запомнить(F5)"; $btnRef.Location = [System.Drawing.Point]::new(15, 385); $btnRef.Size = [System.Drawing.Size]::new(120, 25)
+$btnRef.Text = "Запомнить(F5)"; $btnRef.Location = [System.Drawing.Point]::new(15, 440); $btnRef.Size = [System.Drawing.Size]::new(120, 25)
 $btnRef.Add_Click({ Memorize })
 $form.Controls.Add($btnRef)
 
 $btnScan = New-Object System.Windows.Forms.Button
-$btnScan.Text = "Скан(F6)"; $btnScan.Location = [System.Drawing.Point]::new(145, 385); $btnScan.Size = [System.Drawing.Size]::new(120, 25)
+$btnScan.Text = "Скан(F6)"; $btnScan.Location = [System.Drawing.Point]::new(145, 440); $btnScan.Size = [System.Drawing.Size]::new(120, 25)
 $btnScan.Add_Click({ Scan })
 $form.Controls.Add($btnScan)
 
 $btnStart = New-Object System.Windows.Forms.Button
-$btnStart.Text = "Старт"; $btnStart.Location = [System.Drawing.Point]::new(60, 420); $btnStart.Size = [System.Drawing.Size]::new(80, 30)
+$btnStart.Text = "Старт"; $btnStart.Location = [System.Drawing.Point]::new(60, 475); $btnStart.Size = [System.Drawing.Size]::new(80, 30)
 $btnStart.Add_Click({ if ($script:f) { StopFish } else { StartFish } })
 $form.Controls.Add($btnStart)
 
 $btnExit = New-Object System.Windows.Forms.Button
-$btnExit.Text = "Выход"; $btnExit.Location = [System.Drawing.Point]::new(170, 420); $btnExit.Size = [System.Drawing.Size]::new(80, 30)
+$btnExit.Text = "Выход"; $btnExit.Location = [System.Drawing.Point]::new(170, 475); $btnExit.Size = [System.Drawing.Size]::new(80, 30)
 $btnExit.Add_Click({ $form.Close() })
 $form.Controls.Add($btnExit)
 
 $lblHelp = New-Object System.Windows.Forms.Label
 $lblHelp.Text = "X:-влево/+вправо Y:-вверх/+вниз W:-уже/+шире H:-ниже/+выше | F5=запом F6=скан F3=пуск F4=стоп"
-$lblHelp.Location = [System.Drawing.Point]::new(15, 465); $lblHelp.Size = [System.Drawing.Size]::new(480, 20)
+$lblHelp.Location = [System.Drawing.Point]::new(15, 520); $lblHelp.Size = [System.Drawing.Size]::new(480, 20)
 $lblHelp.ForeColor = [System.Drawing.Color]::Gray
 $form.Controls.Add($lblHelp)
 
@@ -523,7 +549,6 @@ $tm.Add_Tick({
         if ($script:st -eq 10) {
             $script:tk++
             if ($script:tk -eq 1) {
-                try { $baseBright = [ScreenCapture]::CountBrightPixels([int]$numFX.Value, [int]$numFY.Value, [int]$numFW.Value, [int]$numFH.Value, [int]$numFThresh.Value); $script:fishBaseline = $baseBright / ([int]$numFW.Value * [int]$numFH.Value) } catch { $script:fishBaseline = 0.0 }
                 [WinAPI]::SM([WinAPI]::RMD)
                 $txtStatus.Text = "Авто пилкинг..."
             } elseif ($script:tk -eq 6) {
@@ -535,15 +560,17 @@ $tm.Add_Tick({
             try {
                 $fbright = [ScreenCapture]::CountBrightPixels([int]$numFX.Value, [int]$numFY.Value, [int]$numFW.Value, [int]$numFH.Value, [int]$numFThresh.Value)
                 $ftotal = [int]$numFW.Value * [int]$numFH.Value; $fpct = $fbright / $ftotal
-                if ($fpct -gt ($script:fishBaseline + 0.15) -and $fpct -gt ($script:fishBaseline * 2.0) -and $fpct -lt 0.80) {
+                $fo = [double]$numFishOffset.Value / 100.0; $fm = [double]$numFishMult.Value / 100.0
+                if ($fpct -gt ($script:fishBaseline + $fo) -and $fpct -gt ($script:fishBaseline * $fm) -and $fpct -lt 0.80) {
                     $script:fishHit++
-                    if ($script:fishHit -ge 6) {
-                        $script:fishHit = 0
+                    if ($script:fishHit -ge 3 -and $script:alertCooldown -le 0) {
+                        $script:alertCooldown = 10
                         [System.Media.SystemSounds]::Exclamation.Play()
                         $txtStatus.Text = "Поклёвка! Авто пилкинг..."
                     }
                 } else { $script:fishHit = 0 }
             } catch {}
+            if ($script:alertCooldown -gt 0) { $script:alertCooldown-- }
         }
     }
 })
